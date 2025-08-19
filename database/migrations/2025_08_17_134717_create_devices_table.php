@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('devices', function (Blueprint $table) {
             $table->id();
             $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
-            $table->string('customer_id')->nullable();
+            $table->foreignUuid('customer_id')->nullable()->constrained('customers')->nullOnDelete();
             $table->string('device_id');
             $table->string('platform');
             $table->string('device_ip')->nullable(); // Adresse IP de l'appareil

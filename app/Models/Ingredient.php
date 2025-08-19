@@ -2,10 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Customer;
-use App\Models\Document;
-use App\Models\IngredientType;
-use App\Models\Brand;
+use App\Support\Traits\DocumentTrait;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

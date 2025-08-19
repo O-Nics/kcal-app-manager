@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Models;
+namespace App\Support\Traits;
 
+use App\Models\Document;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 trait DocumentTrait

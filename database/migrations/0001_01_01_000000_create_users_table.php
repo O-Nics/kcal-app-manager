@@ -23,7 +23,7 @@ return new class extends Migration
             $table->enum('plan', ['free', 'premium', 'family'])->default('free');
 
             $table->boolean('limitation_profile')->default(false);
-            $table->boolean('accept_cgu')->default(false);
+            $table->boolean('accept_terms')->default(false);
 
             $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();

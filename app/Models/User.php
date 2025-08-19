@@ -7,11 +7,26 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
+use Laravel\Sanctum\HasApiTokens;
 
+/** * The User model.
+ *
+ * @property int $id
+ * @property string $name
+ * @property string $email
+ * @property string $password
+ * @property string|null $provider_id
+ * @property string|null $provider
+ * @property string|null $plan
+ * @property bool $limitation_profile
+ * @property bool $accept_terms
+ * @property Carbon|null $email_verified_at
+ */
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasApiTokens;
 
     /**
      * The attributes that are mass assignable.
@@ -26,7 +41,7 @@ class User extends Authenticatable
         'provider',
         'plan',
         'limitation_profile',
-        'accept_cgu',
+        'accept_terms'
     ];
 
 

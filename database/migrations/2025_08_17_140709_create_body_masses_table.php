@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('body_masses', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(\App\Models\Customer::class)->constrained('customers')->cascadeOnDelete();
+            $table->foreignUuid("customer_id")->constrained('customers')->cascadeOnDelete();
             $table->float('weight');
             // ajouter les mensurations
             $table->timestamps();

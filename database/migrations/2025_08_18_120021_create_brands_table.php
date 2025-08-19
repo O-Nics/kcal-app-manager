@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->boolean('is_verified')->default(false);
-            $table->foreignIdFor(\App\Models\Customer::class, 'customer_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignUuid('customer_id')->nullable()->constrained('customers')->nullOnDelete();
             $table->softDeletes();
             $table->timestamps();
         });

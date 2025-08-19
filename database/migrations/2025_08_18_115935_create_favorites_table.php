@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('favorites', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(\App\Models\Customer::class)->constrained('customers')->cascadeOnDelete();
+            $table->foreignUuid('customer_id')->constrained('customers')->cascadeOnDelete();
             $table->morphs('favoriteable');  // Crée les colonnes 'favoriteable_type' et 'favoriteable_id'
             $table->timestamps();
         });

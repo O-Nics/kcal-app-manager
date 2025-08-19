@@ -14,7 +14,6 @@ return new class extends Migration
     {
         Schema::create('ingredients', function (Blueprint $table) {
             $table->id();
-            $table->id();
             $table->boolean('verified')->default(false);
             $table->foreignUuid('created_by')->nullable()->constrained('customers')->nullOnDelete();
             $table->foreignIdFor(IngredientType::class)->constrained()->cascadeOnDelete();
@@ -26,7 +25,6 @@ return new class extends Migration
 
             $table->integer('kcal_for_100');
             $table->string('barcode')->nullable();
-//            $table->string('brand')->nullable();
             $table->longText('conservation_conditions')->nullable();
             $table->foreignId('image_id')->nullable()->constrained('documents')->nullOnDelete();
             $table->boolean('is_ai')->default(false);

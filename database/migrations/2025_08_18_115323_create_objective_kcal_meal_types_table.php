@@ -18,11 +18,11 @@ return new class extends Migration
 
             $table->unsignedInteger('kcal'); // objectif pour CE type
             $table->date('starts_at');       // inclusif
-            $table->date('ends_at')->nullable(); // exclusif (ou inclusif, à toi de choisir, je prends exclusif)
+            $table->date('ends_at')->nullable();
 
             $table->timestamps();
 
-            $table->unique(['customer_id','meal_type_id','starts_at']);
+            $table->unique(['customer_id', 'meal_type_id', 'starts_at'], 'unique_objective_kcal_meal_types');
         });
     }
 

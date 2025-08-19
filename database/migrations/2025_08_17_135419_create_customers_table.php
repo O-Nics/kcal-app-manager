@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('customers', function (Blueprint $table) {
             $table->uuid('id')->primary();
 
-            $table->foreignIdFor(\App\Models\User::class)->constrained()->cascadeOnDelete();
+            $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
             $table->foreignIdFor(\App\Models\Goal::class)->nullable()->constrained()->nullOnDelete();
             $table->foreignId('profile_image_id')->nullable()->constrained('documents')->nullOnDelete();
 
@@ -53,7 +53,7 @@ return new class extends Migration
             $table->timestamp('last_paywall_at')->nullable();
             $table->timestamp('rated_app_at')->nullable();
 
-            $table->string('picture_from_provider')->nullable()->after('image_id');
+            $table->string('picture_from_provider')->nullable();
 
             $table->timestamps();
         });

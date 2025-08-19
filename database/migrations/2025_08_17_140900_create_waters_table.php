@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('waters', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(\App\Models\User::class)->constrained('users')->cascadeOnDelete();
+            $table->foreignUuid('customer_id')->constrained('customers')->cascadeOnDelete();
             $table->timestamp('added_at');
             $table->double('volume');
             $table->timestamps();

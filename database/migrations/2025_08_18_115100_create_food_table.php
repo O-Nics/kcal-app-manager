@@ -13,12 +13,14 @@ return new class extends Migration
     {
         Schema::create('food', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(\App\Models\Customer::class)->constrained()->cascadeOnDelete();
+            $table->foreignUuid('customer_id')->constrained('customers')->cascadeOnDelete();
             $table->uuidMorphs('foodable');
             $table->double('quantity');
             $table->string('unit');
             $table->foreignIdFor(\App\Models\MealType::class)->constrained()->cascadeOnDelete();
             $table->timestamp('added_at');
+
+            $table->softDeletes();
             $table->timestamps();
         });
     }

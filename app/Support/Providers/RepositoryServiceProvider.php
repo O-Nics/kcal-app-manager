@@ -10,6 +10,8 @@ use App\Support\Repositories\Customer\CustomerRepository;
 use App\Support\Repositories\Customer\CustomerRepositoryEloquent;
 use App\Support\Repositories\Document\DocumentRepository;
 use App\Support\Repositories\Document\DocumentRepositoryEloquent;
+use App\Support\Repositories\Session\SessionRepository;
+use App\Support\Repositories\Session\SessionRepositoryEloquent;
 use App\Support\Repositories\User\UserRepository;
 use App\Support\Repositories\User\UserRepositoryEloquent;
 use Illuminate\Support\ServiceProvider;
@@ -25,6 +27,8 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(UserRepository::class, UserRepositoryEloquent::class);
         $this->app->bind(CustomerRepository::class, CustomerRepositoryEloquent::class);
         $this->app->bind(DocumentRepository::class, DocumentRepositoryEloquent::class);
+        $this->app->bind(SessionRepository::class, SessionRepositoryEloquent::class);
+
     }
 
     /**

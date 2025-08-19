@@ -11,6 +11,5 @@ use App\Support\Data\DeviceData;
 
 interface SessionRepository
 {
-
     public function createSession(User $user, DeviceData $deviceData, TokenPair $tokenPair): Session;
 }

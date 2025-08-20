@@ -30,6 +30,7 @@ class UserRepositoryEloquent extends BaseRepository implements UserRepository
                 'accept_marketing' => $userRegisterData->acceptMarketing,
             ]
         );
+
         $user->saveOrFail();
 
 

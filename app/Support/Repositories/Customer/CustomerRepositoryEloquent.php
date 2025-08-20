@@ -829,4 +829,9 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
 //            'volume_water' => $updateVolumeWaterDTO->volumeWater,
 //        ]);
 //    }
+    public function findById(string $id): ?Customer
+    {
+        return $this->query()->where('id', $id)
+            ->first();
+    }
 }

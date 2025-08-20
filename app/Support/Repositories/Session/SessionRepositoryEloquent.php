@@ -44,11 +44,11 @@ class SessionRepositoryEloquent extends BaseRepository implements SessionReposit
             $device->saveOrFail();
         }
 
-        $devices = Device::query()
-            ->whereHas('sessions', function (Builder $query) use ($user) {
-                $query->where('user_id', $user->id);
-            })
-            ->get();
+//        $device = Device::query()
+//            ->whereHas('sessions', function (Builder $query) use ($user) {
+//                $query->where('user_id', $user->id);
+//            })
+//            ->get();
 
         $session = new Session();
         $session->device()->associate($device);

@@ -3,6 +3,7 @@
 namespace App\Features\Auth\Services;
 
 use App\Models\User;
+use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Laravel\Sanctum\NewAccessToken;
 
@@ -42,13 +43,11 @@ final class TokenService
      */
     public function issueFor(
         User $user,
-        CarbonInterface $acExpiresAt,
-        CarbonInterface $rtExpiresAt,
         array $acAbilities,
         array $rtAbilities,
     ): TokenPair {
-        $access  = $user->createToken('access_token',  $acAbilities, $acExpiresAt);
-        $refresh = $user->createToken('refresh_token', $rtAbilities, $rtExpiresAt);
+        $access  = $user->createToken('access_token',  $acAbilities, Carbon::now()->addMinutes(config('sanctum.ac_expiration')));
+        $refresh = $user->createToken('refresh_token', $rtAbilities, Carbon::now()->addMinutes(config('sanctum.rt_expiration')));
 
         return new TokenPair($access, $refresh);
     }

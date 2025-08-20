@@ -2,7 +2,6 @@
 
 namespace App\Features\Auth\Data;
 
-use App\Modules\Device\DTO\UserDeviceData;
 use App\Support\Data\DeviceData;
 use Spatie\LaravelData\Attributes\Validation\Confirmed;
 use Spatie\LaravelData\Attributes\Validation\Email;

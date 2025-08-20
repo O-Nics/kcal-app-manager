@@ -6,6 +6,7 @@ use App\Features\Auth\Data\RevokeTokenData;
 use App\Features\Auth\Data\UserLoginData;
 use App\Features\Auth\Data\UserRegisterData;
 use App\Features\Auth\Services\TokenService;
+use App\Models\Customer;
 use App\Models\User;
 use App\Support\Abstract\Controller;
 use App\Support\Enums\TokenAbility;
@@ -27,6 +28,13 @@ class CustomerController extends Controller
     )
     {
         $this->customerRepository = $customerRepository;
+    }
+
+    public function customer(Customer $customer): JsonResponse
+    {
+        return response()->json([
+            'customer' => $customer,
+        ]);
     }
 
     public function createProgram(): JsonResponse

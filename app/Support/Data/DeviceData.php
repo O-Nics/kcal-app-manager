@@ -17,7 +17,7 @@ class DeviceData extends Data
     #[Required]
     public string $deviceId;
 
-    #[Required]
+    #[Nullable]
     public string $devicePlatform;
 
     #[Nullable]

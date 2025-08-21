@@ -18,8 +18,6 @@ use Spatie\LaravelData\Data;
 
 class CreateProgramData extends Data
 {
-    #[Required]
-    public string $customerId;
 
     #[Required]
     public string $username;
@@ -38,19 +36,36 @@ class CreateProgramData extends Data
 
     #[Required]
     public string $goalId;
+    // weight loss  perdre du poids en générale : code 1
+    //weight gain prise de masse : code 2
+    //maintain weight maintenir son poids : code 3
+    // gain muscles prise de masse musculaire : code 4
 
 
     #[Required]
     public string $activityLevelId;
+    //
+    //bedrest Convalescence / alité repos prolongé 1.10 code 1
+    //sedentary Sédentaire (peu actif) bureau, < 5k pas/jour 1.20 code 2
+    //light_walk Léger (marche quotidienne) 5–7k pas/jour 1.35 code 3
+    //light_sport Léger + sport 1–2x/semaine yoga, vélo tranquille 1.45 code 4
+    //moderate Modéré 7–10k pas/jour 1.55 code 5
+    //moderate_sport Modéré + sport 3–4x/semaine muscu/cardio modéré 1.60 code 6
+    //active Actif >10k pas/jour 1.70 code 7
+    //very_active Très actif / entraînement quasi quotidien sportifs réguliers 1.85 code 8
 
     #[Required]
     #[WithCast(DateTimeInterfaceCast::class, format: 'Y-m-d')]
     public ?Carbon $birthDate = null;
 
     #[Required]
-    #[WithCast(DateTimeInterfaceCast::class, format: 'Y-m-d')]
-    public ?Carbon $deadlineDate = null;
+    public float $hebdoLoss; // Weekly weight loss goal in kg
 
     #[Required]
-    public int $mealCountPerDay;
+    public array $mealUse;
+
+
+    public ?int $trainingDaysOfWeek = null; // Number of training days per week, if applicable
+    // tableau avec breackfast, lunch, dinner, snacks ou only  lunch, dinner, snacks etc
+
 }

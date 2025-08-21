@@ -2,19 +2,27 @@
 
 namespace App\Features\Auth\Controllers;
 
+use App\Features\Auth\Data\CheckPasswordResetData;
+use App\Features\Auth\Data\ForgotPasswordData;
+use App\Features\Auth\Data\ResetPasswordData;
 use App\Features\Auth\Data\RevokeTokenData;
 use App\Features\Auth\Data\UserLoginData;
 use App\Features\Auth\Data\UserRegisterData;
 use App\Features\Auth\Services\TokenService;
+use App\Features\User\Resources\UserResource;
+use App\Http\Requests\CheckPasswordResetRequest;
+use App\Mail\PasswordResetMail;
 use App\Models\User;
 use App\Support\Abstract\Controller;
 use App\Support\Enums\TokenAbility;
 use App\Support\Repositories\Customer\CustomerRepository;
+use App\Support\Repositories\PasswordReset\PasswordResetRepository;
 use App\Support\Repositories\Session\SessionRepository;
 use App\Support\Repositories\User\UserRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Laravel\Sanctum\PersonalAccessToken;
 use Throwable;
 
@@ -23,18 +31,21 @@ class AuthController extends Controller
     private UserRepository $userRepository;
     private CustomerRepository $customerRepository;
     private SessionRepository $sessionRepository;
+    private PasswordResetRepository $passwordResetRepository;
     private TokenService $tokenService;
 
     public function __construct(
         UserRepository $userRepository,
         CustomerRepository $customerRepository,
         SessionRepository $sessionRepository,
+        PasswordResetRepository $passwordResetRepository,
         TokenService $tokenService
     )
     {
         $this->userRepository = $userRepository;
         $this->customerRepository = $customerRepository;
         $this->sessionRepository = $sessionRepository;
+        $this->passwordResetRepository = $passwordResetRepository;
         $this->tokenService = $tokenService;
     }
 
@@ -199,5 +210,73 @@ class AuthController extends Controller
             'message' => 'Appareil' . $devices->count() > 1 ? 's' : ('' . ' supprimé' . $devices->count() > 1 ? 's' : '' . ' avec succès.'),
         ]);
 
+    }
+
+    public function forgotPassword(ForgotPasswordData $forgotPasswordData): JsonResponse {
+
+        $user = $this->userRepository->findByEmail($forgotPasswordData->email);
+        if($user) {
+            $passwordReset = $this->passwordResetRepository->storePasswordReset($forgotPasswordData);
+            Mail::to($user->email)->send(new PasswordResetMail($passwordReset->getUrl(), $user));
+        }
+        return response()->json([
+            'success' => true
+        ]);
+    }
+
+    public function checkPasswordReset(CheckPasswordResetData $checkPasswordResetData): JsonResponse
+    {
+        $passwordReset = $this->passwordResetRepository->findByEmailAndToken($checkPasswordResetData->email, $checkPasswordResetData->password);
+        if($passwordReset) {
+            if($passwordReset->isExpired()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Demande de réinitialisation expirée',
+                ]);
+            } else {
+                return response()->json([
+                    'success' => true,
+                ]);
+            }
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email ou token de la demande erroné',
+            ]);
+        }
+    }
+
+    public function resetPassword(ResetPasswordData $resetPasswordData): JsonResponse {
+        $passwordReset = $this->passwordResetRepository->findByEmailAndToken($resetPasswordData->email, $resetPasswordData->token);
+        if($passwordReset) {
+            if($passwordReset->isExpired()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Demande de réinitialisation expirée',
+                ], 401);
+            } else {
+                /** @var User $user */
+                $user = $this->userRepository->findByEmail($passwordReset->email);
+                if($user) {
+                    $user = $this->userRepository->changePassword($user, $resetPasswordData->password);
+                    $this->passwordResetRepository->remove($passwordReset);
+
+                    return response()->json([
+                        'success' => true,
+                        'user' => new UserResource($user)
+                    ]);
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Utilisateur introuvable',
+                    ], 404);
+                }
+            }
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email ou token de la demande erroné',
+            ], 404);
+        }
     }
 }

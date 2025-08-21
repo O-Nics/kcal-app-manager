@@ -55,6 +55,7 @@ use Illuminate\Support\Str;
  *
  * @property-read User $user
  * @property-read Goal|null $goal
+ * @property-read ActivityLevel|null $activityLevel
  * @property-read Document|null $customerProfilePicture
  * @property-read Collection|BodyMass[] $customerWeights
  * @property-read Collection|Water[] $waterCustomers
@@ -124,6 +125,13 @@ class Customer extends Model implements Documentable
         return $this->belongsTo(User::class);
     }
 
+    public function goal(): BelongsTo {
+        return $this->belongsTo(Goal::class);
+    }
+
+    public function activityLevel(): BelongsTo {
+        return $this->belongsTo(ActivityLevel::class);
+    }
     public function customerWeights(): HasMany {
         return $this->hasMany(BodyMass::class);
     }
@@ -140,5 +148,11 @@ class Customer extends Model implements Documentable
     public function customerProfilePicture(): BelongsTo {
         return $this->belongsTo(Document::class, 'profile_image_id');
     }
+
+    public function weights(): HasMany
+    {
+        return $this->hasMany(BodyMass::class, 'customer_id', 'id');
+    }
+
     //
 }

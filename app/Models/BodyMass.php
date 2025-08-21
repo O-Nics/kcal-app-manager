@@ -23,7 +23,7 @@ class BodyMass extends Model implements Documentable
 {
     use HasFactory, DocumentTrait;
 
-    protected $fillable = ['customer_id', 'customer_weight', 'date'];
+    protected $fillable = ['customer_id', 'weight', 'date'];
 
     public function customer(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {

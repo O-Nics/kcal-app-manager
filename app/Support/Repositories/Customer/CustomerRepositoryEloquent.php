@@ -2,8 +2,15 @@
 
 namespace App\Support\Repositories\Customer;
 
+use App\Features\Customer\Data\CreateProgramData;
+use App\Features\Customer\Services\ProgramPlanner;
+use App\Models\ActivityLevel;
 use App\Models\Customer;
+use App\Models\Goal;
+use App\Models\MealType;
+use App\Models\User;
 use App\Support\Repositories\BaseRepository;
+
 
 class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepository {
 
@@ -833,5 +840,112 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
     {
         return $this->query()->where('id', $id)
             ->first();
+    }
+
+
+    public function createProgramCustomer(CreateProgramData $createProgramData, ?Customer $customer, User $user): Customer
+    {
+        if($customer->is_owner){
+            $user->update([
+                'name' => $createProgramData->username,
+            ]);
+        }
+
+        $customer->username = $createProgramData->username;
+        $customer->gender = $createProgramData->gender;
+
+        if(Goal::query()->find($createProgramData->goalId)){
+            $customer->goal()->associate(Goal::query()->find($createProgramData->goalId));
+        } else {
+            $customer->goal()->associate(Goal::query()->where('code', '1')->first());
+        }
+
+        $customer->height = $createProgramData->height;
+        $customer->birth_date = $createProgramData->birthDate;
+        $customer->wanted_weight = $createProgramData->targetWeight;
+        $customer->start_weight = $createProgramData->startWeight;
+        $customer->obj_water = 2.0;
+
+        if(ActivityLevel::query()->find($createProgramData->activityLevelId)){
+            $customer->goal()->associate(ActivityLevel::query()->find($createProgramData->activityLevelId));
+        } else {
+            $customer->goal()->associate(ActivityLevel::query()->where('code', '1')->first());
+        }
+
+        $customer->obj_loss_weight_hebdo = $createProgramData->hebdoLoss;
+
+        $customer->weights()->create([
+            'weight' => $createProgramData->startWeight,
+        ]);
+
+        $planner = new ProgramPlanner();
+        $program = $planner->build($createProgramData);
+
+        dd($program);
+        $customer->obj_kcals = $program['daily_kcal'];
+        $customer->obj_steps = $program['daily_steps_goal'];
+        $customer->obj_loss_weight_hebdo = $program['weekly_weight_loss'];
+        $customer->time_to_achieve = $program['duration_days'];
+        $customer->obj_proteins = $program['macro_ratios']['protein'];
+        $customer->obj_lipids = $program['macro_ratios']['fat'];
+        $customer->obj_glucides = $program['macro_ratios']['carbs'];
+        $customer->obj_water = $program['daily_water_goal_ml'];
+        $customer->type_water = 'glass';
+        $customer->volume_water = 250;
+
+        $mealType = MealType::query()->get();
+
+        foreach ($mealType as $type) {
+            switch ($type->code) {
+                case 1:
+                    if($customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->exists()){
+                        $customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->update([
+                            'kcal' => $program['obj_kcal_breakfast'],
+                        ]);
+                    } else {
+                        $customer->objectiveKcalMealTypes()->create([
+                            'meal_type_id' => $type->id,
+                            'kcal' => $program['obj_kcal_breakfast'],
+                        ]);
+                    }
+                    break;
+                case 2:
+                    if($customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->exists()){
+                        $customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->update([
+                            'kcal' => $program['obj_kcal_lunch'],
+                        ]);
+                    } else {
+                        $customer->objectiveKcalMealTypes()->create([
+                            'meal_type_id' => $type->id,
+                            'kcal' => $program['obj_kcal_lunch'],
+                        ]);
+                    }
+                    break;
+                case 3:
+                    if($customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->exists()){
+                        $customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->update([
+                            'kcal' => $program['obj_kcal_snack'],
+                        ]);
+                    } else {
+                        $customer->objectiveKcalMealTypes()->create([
+                            'meal_type_id' => $type->id,
+                            'kcal' => $program['obj_kcal_snack'],
+                        ]);
+                    }
+                    break;
+                case 4:
+                    if($customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->exists()){
+                        $customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->update([
+                            'kcal' => $program['obj_kcal_dinner'],
+                        ]);
+                    } else {
+                        $customer->objectiveKcalMealTypes()->create([
+                            'meal_type_id' => $type->id,
+                            'kcal' => $program['obj_kcal_dinner'],
+                        ]);
+                    }
+                    break;
+            }
+        }
     }
 }

@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Customer;
+use Illuminate\Support\Carbon;
 
 /**
  * Class Recipe
@@ -20,9 +22,11 @@ use App\Models\Customer;
  * @property float|null $time
  * @property bool $verified
  * @property bool $is_private
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
+ * @property-read Customer $creator
+ * @property-read Collection|Ingredient[] $ingredients
  */
 class Recipe extends Model
 {

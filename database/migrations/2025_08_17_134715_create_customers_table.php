@@ -16,6 +16,7 @@ return new class extends Migration
 
             $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
             $table->foreignIdFor(\App\Models\Goal::class)->nullable()->constrained()->nullOnDelete();
+            $table->foreignIdFor(\App\Models\ActivityLevel::class)->nullable()->constrained()->nullOnDelete();
             $table->foreignId('profile_image_id')->nullable()->constrained('documents')->nullOnDelete();
 
             $table->enum('gender', ['male','female','other'])->nullable();

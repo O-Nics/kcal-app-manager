@@ -55,7 +55,10 @@ class CustomerController extends Controller
 
         $customer = $this->customerRepository->createProgramCustomer($createProgramData, $customer, $user);
 
-
+        return response()->json([
+            'success' => true,
+            'customer' => $customer
+        ]);
     }
 
 }

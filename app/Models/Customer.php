@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Pivot\CustomerObjectiveKcalMealType;
 use App\Support\Traits\DocumentTrait;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -29,6 +30,8 @@ use Illuminate\Support\Str;
  * @property string|null $height
  * @property string|null $type_water
  * @property int|null $obj_kcals
+ * @property int|null $train_kcal
+ * @property int|null $rest_kcal
  * @property int|null $obj_steps
  * @property int|null $obj_loss_weight_hebdo
  * @property int|null $time_to_achieve
@@ -73,6 +76,8 @@ class Customer extends Model implements Documentable
         'height',
         'type_water',
         'obj_kcals',
+        'train_kcal',
+        'rest_kcal',
         'obj_steps',
         'obj_loss_weight_hebdo',
         'time_to_achieve',
@@ -153,6 +158,13 @@ class Customer extends Model implements Documentable
     {
         return $this->hasMany(BodyMass::class, 'customer_id', 'id');
     }
+
+    public function objectiveKcalMealTypes(): HasMany
+    {
+        return $this->hasMany(ObjectiveKcalMealType::class, 'customer_id')
+            ->with('mealType');
+    }
+
 
     //
 }

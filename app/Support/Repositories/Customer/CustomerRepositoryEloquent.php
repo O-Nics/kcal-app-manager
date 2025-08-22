@@ -10,6 +10,7 @@ use App\Models\Goal;
 use App\Models\MealType;
 use App\Models\User;
 use App\Support\Repositories\BaseRepository;
+use Illuminate\Support\Carbon;
 
 
 class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepository {
@@ -880,11 +881,10 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
 
         $planner = new ProgramPlanner();
         $program = $planner->build($createProgramData);
-
-        dd($program);
+// dd($program);
         $customer->obj_kcals = $program['daily_kcal'];
         $customer->obj_steps = $program['daily_steps_goal'];
-        $customer->obj_loss_weight_hebdo = $program['weekly_weight_loss'];
+        $customer->obj_loss_weight_hebdo = isset( $program['meta']['weekly_kg']) ? $program['meta']['weekly_kg'] : null;
         $customer->time_to_achieve = $program['duration_days'];
         $customer->obj_proteins = $program['macro_ratios']['protein'];
         $customer->obj_lipids = $program['macro_ratios']['fat'];
@@ -892,60 +892,98 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
         $customer->obj_water = $program['daily_water_goal_ml'];
         $customer->type_water = 'glass';
         $customer->volume_water = 250;
+        $customer->train_kcal = isset($program['meta']['train_kcal']) ? $program['meta']['train_kcal'] : null;
+        $customer->rest_kcal = isset($program['meta']['rest_kcal']) ? $program['meta']['rest_kcal'] : null;
+        $customer->form_passed_at = Carbon::now();
+
 
         $mealType = MealType::query()->get();
-
-        foreach ($mealType as $type) {
+        foreach ($mealType as $type ) {
+            /** * @var MealType $type */
             switch ($type->code) {
                 case 1:
-                    if($customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->exists()){
-                        $customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->update([
-                            'kcal' => $program['obj_kcal_breakfast'],
-                        ]);
-                    } else {
-                        $customer->objectiveKcalMealTypes()->create([
-                            'meal_type_id' => $type->id,
-                            'kcal' => $program['obj_kcal_breakfast'],
-                        ]);
+                    if((isset($program['per_meal_kcal']['breakfast']))){
+                        if($customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->exists()){
+                            $customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->update([
+                                'kcal' => $program['per_meal_kcal']['breakfast'],
+                                'starts_at' => Carbon::now()->startOfDay(),
+                            ]);
+                        } else {
+                            $customer->objectiveKcalMealTypes()->create([
+                                'meal_type_id' => $type->id,
+                                'kcal' => $program['per_meal_kcal']['breakfast'],
+                                'starts_at' => Carbon::now()->startOfDay(),
+                            ]);
+                        }
                     }
                     break;
                 case 2:
-                    if($customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->exists()){
-                        $customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->update([
-                            'kcal' => $program['obj_kcal_lunch'],
-                        ]);
-                    } else {
-                        $customer->objectiveKcalMealTypes()->create([
-                            'meal_type_id' => $type->id,
-                            'kcal' => $program['obj_kcal_lunch'],
-                        ]);
+                    if((isset($program['per_meal_kcal']['snack_morning']))){
+                        if($customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->exists()){
+                            $customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->update([
+                                'kcal' => $program['per_meal_kcal']['snack_morning'],
+                                'starts_at' => Carbon::now()->startOfDay(),
+                            ]);
+                        } else {
+                            $customer->objectiveKcalMealTypes()->create([
+                                'meal_type_id' => $type->id,
+                                'kcal' => $program['per_meal_kcal']['snack_morning'],
+                                'starts_at' => Carbon::now()->startOfDay(),
+                            ]);
+                        }
                     }
                     break;
                 case 3:
-                    if($customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->exists()){
-                        $customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->update([
-                            'kcal' => $program['obj_kcal_snack'],
-                        ]);
-                    } else {
-                        $customer->objectiveKcalMealTypes()->create([
-                            'meal_type_id' => $type->id,
-                            'kcal' => $program['obj_kcal_snack'],
-                        ]);
+                    if((isset($program['per_meal_kcal']['lunch']))){
+                        if($customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->exists()){
+                            $customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->update([
+                                'kcal' => $program['per_meal_kcal']['lunch'],
+                                'starts_at' => Carbon::now()->startOfDay(),
+                            ]);
+                        } else {
+                            $customer->objectiveKcalMealTypes()->create([
+                                'meal_type_id' => $type->id,
+                                'kcal' => $program['per_meal_kcal']['lunch'],
+                                'starts_at' => Carbon::now()->startOfDay(),
+                            ]);
+                        }
                     }
                     break;
                 case 4:
-                    if($customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->exists()){
-                        $customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->update([
-                            'kcal' => $program['obj_kcal_dinner'],
-                        ]);
-                    } else {
-                        $customer->objectiveKcalMealTypes()->create([
-                            'meal_type_id' => $type->id,
-                            'kcal' => $program['obj_kcal_dinner'],
-                        ]);
+                    if((isset($program['per_meal_kcal']['snack_afternoon']))){
+                        if($customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->exists()){
+                            $customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->update([
+                                'kcal' => $program['per_meal_kcal']['snack_afternoon'],
+                                'starts_at' => Carbon::now()->startOfDay(),
+                            ]);
+                        } else {
+                            $customer->objectiveKcalMealTypes()->create([
+                                'meal_type_id' => $type->id,
+                                'kcal' => $program['per_meal_kcal']['snack_afternoon'],
+                                'starts_at' => Carbon::now()->startOfDay(),
+                            ]);
+                        }
                     }
                     break;
+                case 5:
+                    if((isset($program['per_meal_kcal']['dinner']))){
+                        if($customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->exists()){
+                            $customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->update([
+                                'kcal' => $program['per_meal_kcal']['dinner'],
+                                'starts_at' => Carbon::now()->startOfDay(),
+                            ]);
+                        } else {
+                            $customer->objectiveKcalMealTypes()->create([
+                                'meal_type_id' => $type->id,
+                                'kcal' => $program['per_meal_kcal']['dinner'],
+                                'starts_at' => Carbon::now()->startOfDay(),
+                            ]);
+                        }
+                    }
             }
         }
+
+        return $customer;
+
     }
 }

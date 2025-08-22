@@ -62,6 +62,8 @@ class AuthController extends Controller
 
             $session = $this->sessionRepository->createSession($user, $userRegisterData->device, $tokens);
             $customer = $user->customers()->first();
+            $customer->last_login_at = now();
+            $customer->save();
 
             return response()->json([
                 'success' => true,
@@ -106,6 +108,9 @@ class AuthController extends Controller
                     $customer = $user->customers()
                         ->where('id', $userLoginData->customerId)
                         ->first();
+
+                    $customer->last_login_at = now();
+                    $customer->save();
                 }
 
                 return response()->json([

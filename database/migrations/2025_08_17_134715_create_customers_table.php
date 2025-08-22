@@ -29,6 +29,8 @@ return new class extends Migration
             $table->string('type_water')->nullable();// percent
 
             $table->integer('obj_kcals')->nullable();
+            $table->integer('train_kcal')->nullable();
+            $table->integer('rest_kcal')->nullable();
             $table->integer('obj_steps')->nullable();
             $table->integer('obj_loss_weight_hebdo')->nullable();
             $table->integer('time_to_achieve')->nullable();
@@ -45,7 +47,6 @@ return new class extends Migration
             $table->boolean('is_owner')->default(false);
             $table->boolean('profile_locked')->default(false);
             $table->boolean('accept_marketing')->default(false);
-            $table->boolean('filled_first_form')->default(false);
 
             $table->date('birth_date')->nullable();
             $table->date('form_passed_at')->nullable();

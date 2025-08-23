@@ -34,6 +34,7 @@ use Illuminate\Support\Str;
  * @property int|null $rest_kcal
  * @property int|null $obj_steps
  * @property int|null $obj_loss_weight_hebdo
+ * @property int|null $max_loss_weight_hebdo
  * @property int|null $time_to_achieve
  * @property float|null $start_weight
  * @property float|null $wanted_weight
@@ -99,6 +100,7 @@ class Customer extends Model implements Documentable
         'last_login_at',
         'last_paywall_at',
         'rated_app_at',
+        'max_loss_weight_hebdo',
         'picture_from_provider',
     ];
 

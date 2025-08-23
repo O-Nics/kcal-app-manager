@@ -882,19 +882,20 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
 
         $planner = new ProgramPlanner();
         $program = $planner->build($createProgramData);
-// dd($program);
+        dd($program);
         $customer->obj_kcals = $program['daily_kcal'];
         $customer->obj_steps = $program['daily_steps_goal'];
-        $customer->obj_loss_weight_hebdo = isset( $program['meta']['weekly_kg']) ? $program['meta']['weekly_kg'] : null;
-        $customer->time_to_achieve = $program['duration_days'];
-        $customer->obj_proteins = $program['macro_ratios']['protein'];
-        $customer->obj_lipids = $program['macro_ratios']['fat'];
-        $customer->obj_glucides = $program['macro_ratios']['carbs'];
-        $customer->obj_water = $program['daily_water_goal_ml'];
+        $customer->obj_loss_weight_hebdo = isset( $program['meta']['weekly_kg']) ?  $program['meta']['weekly_kg'] : null;
+        $customer->max_loss_weight_hebdo = isset( $program['meta']['max_weekly_kg']) ?  $program['meta']['max_weekly_kg'] : null;
+        $customer->time_to_achieve = (int)  $program['duration_days'];
+        $customer->obj_proteins = (int)  $program['macro_ratios']['protein'];
+        $customer->obj_lipids = (int) $program['macro_ratios']['fat'];
+        $customer->obj_glucides = (int) $program['macro_ratios']['carbs'];
+        $customer->obj_water = (int) $program['daily_water_goal_ml'];
         $customer->type_water = 'glass';
-        $customer->volume_water = 250;
-        $customer->train_kcal = isset($program['meta']['train_kcal']) ? $program['meta']['train_kcal'] : null;
-        $customer->rest_kcal = isset($program['meta']['rest_kcal']) ? $program['meta']['rest_kcal'] : null;
+        $customer->volume_water_by_each = 250;
+        $customer->train_kcal = (int) isset($program['meta']['train_kcal']) ? $program['meta']['train_kcal'] : null;
+        $customer->rest_kcal = (int) isset($program['meta']['rest_kcal']) ? $program['meta']['rest_kcal'] : null;
         $customer->form_passed_at = Carbon::now();
 
 
@@ -906,13 +907,13 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
                     if((isset($program['per_meal_kcal']['breakfast']))){
                         if($customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->exists()){
                             $customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->update([
-                                'kcal' => $program['per_meal_kcal']['breakfast'],
+                                'kcal' => (int) $program['per_meal_kcal']['breakfast'],
                                 'starts_at' => Carbon::now()->startOfDay(),
                             ]);
                         } else {
                             $customer->objectiveKcalMealTypes()->create([
                                 'meal_type_id' => $type->id,
-                                'kcal' => $program['per_meal_kcal']['breakfast'],
+                                'kcal' => (int) $program['per_meal_kcal']['breakfast'],
                                 'starts_at' => Carbon::now()->startOfDay(),
                             ]);
                         }
@@ -922,13 +923,13 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
                     if((isset($program['per_meal_kcal']['snack_morning']))){
                         if($customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->exists()){
                             $customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->update([
-                                'kcal' => $program['per_meal_kcal']['snack_morning'],
+                                'kcal' => (int) $program['per_meal_kcal']['snack_morning'],
                                 'starts_at' => Carbon::now()->startOfDay(),
                             ]);
                         } else {
                             $customer->objectiveKcalMealTypes()->create([
                                 'meal_type_id' => $type->id,
-                                'kcal' => $program['per_meal_kcal']['snack_morning'],
+                                'kcal' => (int) $program['per_meal_kcal']['snack_morning'],
                                 'starts_at' => Carbon::now()->startOfDay(),
                             ]);
                         }
@@ -938,13 +939,13 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
                     if((isset($program['per_meal_kcal']['lunch']))){
                         if($customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->exists()){
                             $customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->update([
-                                'kcal' => $program['per_meal_kcal']['lunch'],
+                                'kcal' => (int) $program['per_meal_kcal']['lunch'],
                                 'starts_at' => Carbon::now()->startOfDay(),
                             ]);
                         } else {
                             $customer->objectiveKcalMealTypes()->create([
                                 'meal_type_id' => $type->id,
-                                'kcal' => $program['per_meal_kcal']['lunch'],
+                                'kcal' => (int) $program['per_meal_kcal']['lunch'],
                                 'starts_at' => Carbon::now()->startOfDay(),
                             ]);
                         }
@@ -954,13 +955,13 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
                     if((isset($program['per_meal_kcal']['snack_afternoon']))){
                         if($customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->exists()){
                             $customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->update([
-                                'kcal' => $program['per_meal_kcal']['snack_afternoon'],
+                                'kcal' => (int) $program['per_meal_kcal']['snack_afternoon'],
                                 'starts_at' => Carbon::now()->startOfDay(),
                             ]);
                         } else {
                             $customer->objectiveKcalMealTypes()->create([
                                 'meal_type_id' => $type->id,
-                                'kcal' => $program['per_meal_kcal']['snack_afternoon'],
+                                'kcal' => (int) $program['per_meal_kcal']['snack_afternoon'],
                                 'starts_at' => Carbon::now()->startOfDay(),
                             ]);
                         }
@@ -970,13 +971,13 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
                     if((isset($program['per_meal_kcal']['dinner']))){
                         if($customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->exists()){
                             $customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->update([
-                                'kcal' => $program['per_meal_kcal']['dinner'],
+                                'kcal' => (int) $program['per_meal_kcal']['dinner'],
                                 'starts_at' => Carbon::now()->startOfDay(),
                             ]);
                         } else {
                             $customer->objectiveKcalMealTypes()->create([
                                 'meal_type_id' => $type->id,
-                                'kcal' => $program['per_meal_kcal']['dinner'],
+                                'kcal' => (int) $program['per_meal_kcal']['dinner'],
                                 'starts_at' => Carbon::now()->startOfDay(),
                             ]);
                         }

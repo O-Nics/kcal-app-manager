@@ -38,14 +38,6 @@ final class ProgramPlanner
         '8' => 14000,
     ];
 
-    /** Distribution des repas en fonction du nombre de repas (somme = 1.0) */
-    private const MEAL_DISTS = [
-        2 => [0.45, 0.55],                                // matin / soir
-        3 => [0.30, 0.40, 0.30],                          // ptit dej / dej / dîner
-        4 => [0.25, 0.35, 0.25, 0.15],                    // + collation
-        5 => [0.22, 0.30, 0.10, 0.28, 0.10],              // 2 collations
-        6 => [0.20, 0.25, 0.10, 0.25, 0.10, 0.10],        // 3 collations
-    ];
 
     private const BASE_PROFILES = [
         'weight_loss' => [
@@ -178,12 +170,9 @@ final class ProgramPlanner
         }
 
         // Conversion en kcal, clés = noms de slots (breakfast, lunch, ...)
-        $out = [];
-        foreach ($rawBySlot as $slot => $ratio) {
-            $out[$slot] = (int) round($dailyKcal * $ratio);
-        }
-
-        return $out;
+        return array_map(function ($ratio) use ($dailyKcal) {
+            return (int)round($dailyKcal * $ratio);
+        }, $rawBySlot);
     }
 
     /** Common: compute macro ratios in % from kcal */
@@ -211,15 +200,13 @@ final class ProgramPlanner
         $factor = $gender === 'female' ? 0.031 : 0.035;
         $baseWaterL = $weightRefKg * $factor;
 
+        $act = (int) $activityLevelId; // normalisation pour les comparaisons
         $bonusL = 0.0;
-        if (in_array($activityLevelId, ['7','8'], true)) {
+        if ($act >= 7) {
             $bonusL += 0.5;
         }
 
-
         $waterMl = ($baseWaterL + $bonusL) * 1000;
-
-        // Arrondi au verre de 250 ml
         return max(2000, (int) (round($waterMl / 250) * 250));
     }
 
@@ -281,39 +268,54 @@ final class ProgramPlanner
      */
     private function dailyDeficitFromHebdoLoss(CreateProgramData $d, float $tdee, bool $isRecomp = false): array
     {
-        // Si non fourni, défaut 0.5 kg/sem
-        $weeklyKgTarget = ($d->hebdoLoss ?? 0) > 0 ? (float) $d->hebdoLoss : 0.5;
-
-        // Borne par % du poids/semaine (max 1.0%)
-        $weeklyKgCap = $d->startWeight > 0 ? round($d->startWeight * 0.010, 3) : $weeklyKgTarget;
-        $weeklyKg    = min($weeklyKgTarget, $weeklyKgCap);
+        // 1) Cible demandée (hebdoLoss) et cap par % du poids/sem (1.0%)
+        $requestedWeeklyKg = ($d->hebdoLoss ?? 0) > 0 ? (float) $d->hebdoLoss : 0.5;
+        $weeklyKgCapByWeight = $d->startWeight > 0 ? round($d->startWeight * 0.010, 3) : $requestedWeeklyKg;
+        $weeklyKgByWeight    = min($requestedWeeklyKg, $weeklyKgCapByWeight);
 
         $cappedBy = null;
-        if ($weeklyKgTarget > $weeklyKg) {
+        if ($requestedWeeklyKg > $weeklyKgByWeight) {
             $cappedBy = 'weekly_pct_cap';
         }
 
-        // % du poids/sem pour info
-        $weeklyPct = ($d->startWeight > 0) ? ($weeklyKg / $d->startWeight) : 0.0; // ex: 0.007 = 0.7%
-
-        // Conversion en déficit quotidien (~7700 kcal/kg)
-        $dailyFromHebdo = - ($weeklyKg * 7700.0) / 7.0; // kcal/j (négatif)
-
-        // Cap global: déficit ≤ cap adaptatif du TDEE
+        // 2) Cap global par % du TDEE (adaptatif)
         $bmi   = ($d->height > 0) ? ($d->startWeight / pow($d->height/100, 2)) : 25.0;
         $capPct = $this->deficitCapPct($bmi, (int) $d->activityLevelId, null, $isRecomp);
-        $maxDailyDeficitByPct = - ($tdee * $capPct);
-        $adjust = (int) round(max($dailyFromHebdo, $maxDailyDeficitByPct));
-        if ($dailyFromHebdo < $maxDailyDeficitByPct) {
+        $maxDailyDeficitByPct = - ($tdee * $capPct); // kcal/j (négatif)
+
+        // 3) Déficit quotidien issu de la demande (après cap "poids/sem")
+        $dailyFromRequestedByWeight = - ($weeklyKgByWeight * 7700.0) / 7.0; // kcal/j
+
+        // 4) Déficit effectif appliqué = borné par le cap TDEE
+        $adjust = (int) round(max($dailyFromRequestedByWeight, $maxDailyDeficitByPct));
+        if ($dailyFromRequestedByWeight < $maxDailyDeficitByPct) {
             $cappedBy = 'tdee_cap';
         }
 
+        // 5) Perte hebdo EFFECTIVE (dérivée du déficit réellement appliqué)
+        $effectiveWeeklyKg  = round(abs(($adjust * 7) / 7700.0), 3);
+        $effectiveWeeklyPct = $d->startWeight > 0 ? round($effectiveWeeklyKg / $d->startWeight, 4) : 0.0;
+
+        // 6) Maximum théorique atteignable cette semaine (par %TDEE UNIQUEMENT)
+        $maxWeeklyKgByTdee = round(abs(($maxDailyDeficitByPct * 7) / 7700.0), 3);
+
         return [
-            'adjust'    => $adjust,
-            'weekly_kg' => $weeklyKg,
-            'weekly_pct'=> $weeklyPct,
-            'capped_by' => $cappedBy,
-            'cap_pct'   => $capPct,
+            // kcal/j négatif (à AJOUTER au TDEE pour obtenir la cible journalière)
+            'adjust'              => $adjust,
+
+            // Perte HEBDO EFFECTIVE (post-cap), toujours cohérente avec "adjust"
+            'weekly_kg'           => $effectiveWeeklyKg,
+            'weekly_pct'          => $effectiveWeeklyPct,
+
+            // Optionnel: pour transparence, on expose la demande initiale
+            'requested_weekly_kg' => $requestedWeeklyKg,
+
+            // Debug / méta cap
+            'capped_by'           => $cappedBy,
+            'cap_pct'             => $capPct,
+
+            // Plafond atteignable cette semaine (par %TDEE uniquement)
+            'max_weekly_kg'       => $maxWeeklyKgByTdee,
         ];
     }
 
@@ -340,8 +342,15 @@ final class ProgramPlanner
         $def = $this->dailyDeficitFromHebdoLoss($d, $tdee);
         $goalAdjust = $def['adjust'];
 
+
         $dailyKcal = (int) round($tdee + $goalAdjust);
         $dailyKcal = $this->clampDailyKcalForSafety($dailyKcal, $tdee, $d->gender ?? null);
+        // Nouveau garde-fou relatif au poids cible : >= 30 kcal/kg
+        $weightRef = ($d->targetWeight > 0 && $d->targetWeight < $d->startWeight) ? $d->targetWeight : $d->startWeight;
+        $minByWeight = (int) round($weightRef * 30);
+        if ($dailyKcal < $minByWeight) {
+            $dailyKcal = $minByWeight;
+        }
 
         // Protéines sur poids cible (1.8–2.2 g/kg → 2.0 par défaut)
         $useWeightForProtein = ($d->targetWeight > 0 && $d->targetWeight < $d->startWeight) ? $d->targetWeight : $d->startWeight;
@@ -379,7 +388,7 @@ final class ProgramPlanner
 
         // Ajustement glucides si sportif (niveau id >= 6)
         if ((int)$d->activityLevelId >= 6) {
-            $minCarbG = (int) round($useWeightForProtein * 3.0);
+            $minCarbG = (int) round($useWeightForProtein * 2.5);
             if ($carbG < $minCarbG) {
                 $needed = $minCarbG*4 - $carbKc;
                 $fatFloorKc = max((int) round($dailyKcal * 0.20), $minFatG * 9);
@@ -392,23 +401,25 @@ final class ProgramPlanner
         }
 
         // Rebalance: prot% >= carbs% (cap 2.4 g/kg sur prot)
-        $proteinPctTmp = ($proteinKc / max(1, $dailyKcal)) * 100;
-        $carbPctTmp    = ($carbKc    / max(1, $dailyKcal)) * 100;
-        if ($carbPctTmp > $proteinPctTmp) {
-            $maxProtPerKg = 2.4;
-            $targetCarbKc = min($carbKc, $proteinKc);
-            $shift        = $carbKc - $targetCarbKc;
-            if ($shift > 0) {
-                $proteinKcNew = $proteinKc + $shift;
-                $maxProteinKc = (int) round($maxProtPerKg * $useWeightForProtein) * 4;
-                if ($proteinKcNew > $maxProteinKc) {
-                    $excess       = $proteinKcNew - $maxProteinKc;
-                    $proteinKcNew = $maxProteinKc;
-                    $targetCarbKc += $excess;
+        if (config('program.enforce_protein_over_carbs', false)) {
+            $proteinPctTmp = ($proteinKc / max(1, $dailyKcal)) * 100;
+            $carbPctTmp    = ($carbKc    / max(1, $dailyKcal)) * 100;
+            if ($carbPctTmp > $proteinPctTmp) {
+                $maxProtPerKg = 2.4;
+                $targetCarbKc = min($carbKc, $proteinKc);
+                $shift        = $carbKc - $targetCarbKc;
+                if ($shift > 0) {
+                    $proteinKcNew = $proteinKc + $shift;
+                    $maxProteinKc = (int) round($maxProtPerKg * $useWeightForProtein) * 4;
+                    if ($proteinKcNew > $maxProteinKc) {
+                        $excess       = $proteinKcNew - $maxProteinKc;
+                        $proteinKcNew = $maxProteinKc;
+                        $targetCarbKc += $excess;
+                    }
+                    $proteinKc = $proteinKcNew; $carbKc = $targetCarbKc;
+                    $proteinG  = (int) round($proteinKc / 4);
+                    $carbG     = (int) round($carbKc / 4);
                 }
-                $proteinKc = $proteinKcNew; $carbKc = $targetCarbKc;
-                $proteinG  = (int) round($proteinKc / 4);
-                $carbG     = (int) round($carbKc / 4);
             }
         }
 
@@ -417,7 +428,7 @@ final class ProgramPlanner
         // respecter des bornes diététiques et l'adhérence long-terme.
         $minCarbGBase = 100;
         $minCarbGPal  = ((int)$d->activityLevelId >= 6)
-            ? max($minCarbGBase, (int) round($useWeightForProtein * 3.0))   // sportif régulier
+            ? max($minCarbGBase, (int) round($useWeightForProtein * 2.5))   // sportif régulier
             : max($minCarbGBase, (int) round($useWeightForProtein * 1.5));   // sédentaire / léger
         $minCarbKc    = $minCarbGPal * 4;
 
@@ -474,14 +485,13 @@ final class ProgramPlanner
         // Steps & water (poids cible si dispo)
         $steps   = $this->stepsFor($d->activityLevelId, true);
         $wWeight = ($d->targetWeight > 0 && $d->targetWeight < $d->startWeight) ? $d->targetWeight : $d->startWeight;
-        $waterMl = $this->waterMlFor($wWeight, $d->activityLevelId);
+        $waterMl = $this->waterMlFor($wWeight, $d->activityLevelId, $d->gender);
 
         // Répartition par repas
         $profile = self::BASE_PROFILES['weight_loss'];
         $perMeal = $this->distributeByMealUse($dailyKcal, $d->mealUse, $profile);
 
-        // Durée prendr en compte le hebdo
-
+        // Durée prend en compte le rythme effectif (weekly_kg)
         $durationDays = null;
         if ($d->targetWeight > 0) {
             $deltaKg    = $d->targetWeight - $d->startWeight; // négatif si perte
@@ -509,6 +519,7 @@ final class ProgramPlanner
                 'goal_code' => 'weight_loss',
                 'weekly_pct' => $def['weekly_pct'],
                 'weekly_kg' => $def['weekly_kg'],
+                'max_weekly_kg' => $def['max_weekly_kg'],
                 'cap_pct'   => $def['cap_pct'] ?? null,
                 'capped_by' => $def['capped_by'] ?? null,
             ],
@@ -518,15 +529,55 @@ final class ProgramPlanner
     /** Goal 4: Gain muscles */
     private function planForMuscleGain(CreateProgramData $d, float $tdee, float $bmr, float $pal): array
     {
-        // Surplus modéré 10–15% du TDEE (lean gain)
-        $dailyKcal = (int) round($tdee * 1.12); // 12% par défaut
+        // Surplus piloté par hebdoGain (= hebdoLoss), cap non-conservateur (contrairement à recomp)
+        $sur = $this->dailySurplusFromHebdoGain($d, $tdee, false);
+        $dailyKcal = (int) round($tdee + $sur['adjust']);
 
-        // Protéines 1.6–2.0 g/kg (point de départ 1.8 g/kg)
+        // --- Calorie cycling optionnel jours entraînés / jours repos (même moyenne hebdo) ---
+        $trainDays = max(0, min(($d->trainingDaysOfWeek ?? 0), 6));
+        $weeklyAvg = null; $trainKcal = null; $restKcal = null;
+        if ($trainDays > 0) {
+            $restDays  = 7 - $trainDays;
+
+            // Écarter de ±8% du TDEE autour de la cible du jour
+            $upShift   = (int) round(0.08 * $tdee);
+            $downShift = (int) round(0.08 * $tdee);
+            $rawTrain  = $dailyKcal + $upShift;
+            $rawRest   = $dailyKcal - $downShift;
+
+            // Garde-fous (jamais trop bas/haut selon les règles globales)
+            $rawTrain = $this->clampDailyKcalForSafety($rawTrain, $tdee, $d->gender ?? null);
+            $rawRest  = $this->clampDailyKcalForSafety($rawRest,  $tdee, $d->gender ?? null);
+
+            // Rééchelle pour que la moyenne hebdo retombe sur la cible
+            $avgNow = ($rawTrain * $trainDays + $rawRest * $restDays) / 7.0;
+            if ($avgNow != 0) {
+                $scale     = $dailyKcal / $avgNow;
+                $trainKcal = (int) round($rawTrain * $scale);
+                $restKcal  = (int) round($rawRest  * $scale);
+
+                // Re-clamp post-échelle
+                $trainKcal = $this->clampDailyKcalForSafety($trainKcal, $tdee, $d->gender ?? null);
+                $restKcal  = $this->clampDailyKcalForSafety($restKcal,  $tdee, $d->gender ?? null);
+            } else {
+                $trainKcal = $rawTrain;
+                $restKcal  = $rawRest;
+            }
+
+            $weeklyAvg = (int) round(($trainKcal * $trainDays + $restKcal * $restDays) / 7);
+        }
+
+        // Si cycling actif, on remplace la cible journalière par la moyenne hebdo
+        if ($weeklyAvg !== null) {
+            $dailyKcal = $weeklyAvg;
+        }
+
+        // Protéines 1.8 g/kg (bornes 1.6–2.2 g/kg)
         $proteinPerKg = 1.8;
         $proteinG  = (int) round($d->startWeight * $proteinPerKg);
         $proteinKc = $proteinG * 4;
-        $protFloorKc = (int) round($d->startWeight * 1.6) * 4; // on ne descend pas sous 1.6 g/kg
-        $protCeilKc  = (int) round($d->startWeight * 2.2) * 4; // max utile 2.2 g/kg
+        $protFloorKc = (int) round($d->startWeight * 1.6) * 4; // 1.6 g/kg min
+        $protCeilKc  = (int) round($d->startWeight * 2.2) * 4; // 2.2 g/kg max
         $proteinKc   = max($protFloorKc, min($proteinKc, $protCeilKc));
 
         // Lipides 25% kcal (min 0.8 g/kg ou 50 g)
@@ -539,27 +590,41 @@ final class ProgramPlanner
         $carbKc = max(0, $dailyKcal - ($proteinKc + $fatKc));
         $carbG  = (int) round($carbKc / 4);
 
-        // Cibles glucidiques pour performance / hypertrophie
-        $targetCarbG = (int) round($d->startWeight * 4.5); // cible (4–6 g/kg), on vise 4.5
-        $minCarbG    = (int) round($d->startWeight * (((int)$d->activityLevelId >= 6) ? 3.5 : 3.0)); // plancher dynamique
+        // ---- Cibles glucidiques pour perf, adaptées à l'activité et à la fréquence d'entraînement ----
+        $activityId = (int) $d->activityLevelId;
+
+        // Plancher absolu "santé/perf"
+        $absMinCarbG = 130;
+
+        // Planchers dynamiques g/kg (plus on s'entraîne / est actif, plus le plancher monte)
+        $minCarbPerKg = 3.0;                            // base
+        if ($activityId >= 6) { $minCarbPerKg = max($minCarbPerKg, 3.5); }
+        if ($trainDays >= 4) {  $minCarbPerKg = max($minCarbPerKg, 3.6); }
+        $minCarbG = (int) round(max($absMinCarbG, $d->startWeight * $minCarbPerKg));
+
+        // Cible glucidique
+        $targetCarbPerKg = 4.5;                         // base hypertrophie
+        if ($trainDays >= 4) {  $targetCarbPerKg = 5.0; }
+        $targetCarbG = (int) round($d->startWeight * $targetCarbPerKg);
         $minCarbKc   = $minCarbG * 4;
 
-        // ---- LISSAGE MACRO (lean gain) ----
-        // 1) Assurer lipides 20–30% et >= 0.8 g/kg
-        $lipMinPct = 20; $lipMaxPct = 30;
+        // ---- LISSAGE MACRO ----
+        // 1) Lipides bornés par activité (>=0.8 g/kg) : sédentaire/léger 22–28%, modéré+ 25–32%
+        if ($activityId <= 3) { $lipMinPct = 22; $lipMaxPct = 28; }
+        else                  { $lipMinPct = 25; $lipMaxPct = 32; }
         $lipMinKc  = max((int) round($dailyKcal * $lipMinPct / 100), $minFatG * 9);
         $lipMaxKc  = (int) round($dailyKcal * $lipMaxPct / 100);
         $fatKc     = max($lipMinKc, min($fatKc, $lipMaxKc));
 
-        // 2) Protéines cap à ~30% kcal (sans passer sous 1.6 g/kg)
-        $protPctCap = 30;
+        // 2) Protéines capées à ~30% kcal (sans passer sous 1.6 g/kg)
+        $protPctCap  = 30;
         $currProtPct = ($proteinKc / max(1, $dailyKcal)) * 100;
         if ($currProtPct > $protPctCap) {
             $targetProtKc = (int) round($dailyKcal * $protPctCap / 100);
             $proteinKc    = max($targetProtKc, $protFloorKc);
         }
 
-        // 3) Recalcul des glucides, avec plancher minCarb et tentative vers targetCarb
+        // 3) Glucides = reste, avec plancher dynamique et tentative vers la cible
         $carbKc = max(0, $dailyKcal - ($proteinKc + $fatKc));
         if ($carbKc < $minCarbKc) {
             $needed = $minCarbKc - $carbKc;
@@ -568,18 +633,17 @@ final class ProgramPlanner
                 $take = min($needed, $fatKc - $lipMinKc);
                 if ($take > 0) { $fatKc -= $take; $carbKc += $take; $needed -= $take; }
             }
-            // b) réduire protéines jusqu'à 1.6 g/kg si encore nécessaire
+            // b) réduire protéines jusqu'à 1.6 g/kg si nécessaire
             if ($needed > 0 && $proteinKc > $protFloorKc) {
                 $take = min($needed, $proteinKc - $protFloorKc);
                 if ($take > 0) { $proteinKc -= $take; $carbKc += $take; $needed -= $take; }
             }
         } else {
-            // Si on a de la marge au-dessus du plancher, tenter d'approcher targetCarbG
+            // Si marge, rapprocher de la cible (ex: 5 g/kg quand training régulier) en libérant un peu de lipides (jusqu'à 22–24%)
             $targetKc = $targetCarbG * 4;
             if ($carbKc < $targetKc) {
                 $needed = $targetKc - $carbKc;
-                // On peut libérer un peu depuis les lipides (jusqu'à 22% si besoin)
-                $softLipFloorKc = max((int) round($dailyKcal * 0.22), $lipMinKc); // ne pas descendre sous lipMinKc
+                $softLipFloorKc = max((int) round($dailyKcal * 0.24), $lipMinKc);
                 if ($fatKc > $softLipFloorKc) {
                     $take = min($needed, $fatKc - $softLipFloorKc);
                     if ($take > 0) { $fatKc -= $take; $carbKc += $take; }
@@ -587,7 +651,7 @@ final class ProgramPlanner
             }
         }
 
-        // 4) Convertir en grammes (final)
+        // Conversion finale en grammes
         $proteinG = (int) round($proteinKc / 4);
         $fatG     = (int) round($fatKc / 9);
         $carbG    = (int) round($carbKc / 4);
@@ -595,7 +659,7 @@ final class ProgramPlanner
         // Ratios finaux
         [$proteinPct, $fatPct, $carbPct] = $this->macroRatios($dailyKcal, $proteinKc, $fatKc);
 
-        // Steps & water
+        // Steps & eau
         $steps   = self::STEPS_BY_ACTIVITY[$d->activityLevelId] ?? 8000;
         $waterMl = $this->waterMlFor($d->startWeight, $d->activityLevelId, $d->gender ?? null);
         $profile = self::BASE_PROFILES['gain_muscles'];
@@ -604,21 +668,30 @@ final class ProgramPlanner
         return [
             'daily_kcal' => $dailyKcal,
             'macronutrients' => [
-                'protein' => ['g' => (int)$proteinG, 'kcal' => (int)$proteinKc],
-                'fat'     => ['g' => (int)$fatG,     'kcal' => (int)$fatKc],
-                'carbs'   => ['g' => (int)$carbG,    'kcal' => (int)$carbKc],
+                'protein' => ['g' => $proteinG, 'kcal' => $proteinKc],
+                'fat'     => ['g' => $fatG,     'kcal' => $fatKc],
+                'carbs'   => ['g' => $carbG,    'kcal' => $carbKc],
             ],
-            'macro_ratios' => ['protein' => $proteinPct, 'fat' => $fatPct, 'carbs' => $carbPct],
+            'macro_ratios' => ['protein' => (int)$proteinPct, 'fat' => (int)$fatPct, 'carbs' => (int)$carbPct],
             'daily_steps_goal' => $steps,
             'daily_water_goal_ml' => $waterMl,
             'per_meal_kcal' => $perMeal,
             'duration_days' => null,
-            'meta' => [ 'bmr' => (int) round($bmr), 'pal' => $pal, 'tdee' => (int) round($tdee), 'goal_adjust_kcal' => (int) round($dailyKcal - $tdee), 'goal_code' => 'gain_muscles' ],
+            'meta' => [
+                'bmr' => (int) round($bmr),
+                'pal' => $pal,
+                'tdee' => (int) round($tdee),
+                'goal_adjust_kcal' => $sur['adjust'],
+                'goal_code' => 'gain_muscles',
+                'weekly_avg_kcal' => $weeklyAvg ?? null,
+                'train_kcal'      => $trainKcal ?? null,
+                'rest_kcal'       => $restKcal ?? null,
+                'cap_pct'   => $sur['cap_pct'] ?? null,
+                'capped_by' => $sur['capped_by'] ?? null,
+            ],
         ];
     }
 
-    /** Goal 2: Weight gain (bulk) */
-    /*TODO tester les time to achieve*/
     private function planForWeightGain(CreateProgramData $d, float $tdee, float $bmr, float $pal): array
     {
         // Surplus piloté par hebdo (kg/sem) + cap adaptatif TDEE
@@ -639,9 +712,32 @@ final class ProgramPlanner
         $minFatG = max(50, (int) round($d->startWeight * 0.8));
         if ($fatG < $minFatG) { $fatG = $minFatG; $fatKc = $fatG * 9; }
 
+        // Plancher absolu glucides (130 g) pour éviter très bas carb en prise de poids
+        $absMinCarbG = 130;
+
         // Carbs init = reste
         $carbKc = max(0, $dailyKcal - ($proteinKc + $fatKc));
         $carbG  = (int) round($carbKc / 4);
+
+        // Enforce absolute carb floor (130 g) with safe rebalance (reduce fats first to lipMinKc, then proteins to 1.6 g/kg)
+        $absMinCarbG = $absMinCarbG ?? 130;
+        if ($carbG < $absMinCarbG) {
+            $needed = ($absMinCarbG * 4) - $carbKc;
+            // tentative: réduire lipides vers un plancher temporaire (sera borné à nouveau plus bas)
+            $tmpLipMinPct = 20;
+            $tmpLipMinKc  = max((int) round($dailyKcal * $tmpLipMinPct / 100), $minFatG * 9);
+            if ($fatKc > $tmpLipMinKc) {
+                $take = min($needed, $fatKc - $tmpLipMinKc);
+                if ($take > 0) { $fatKc -= $take; $carbKc += $take; $needed -= $take; }
+            }
+            if ($needed > 0 && $proteinKc > $protFloorKc) {
+                $take = min($needed, $proteinKc - $protFloorKc);
+                if ($take > 0) { $proteinKc -= $take; $carbKc += $take; $needed -= $take; }
+            }
+            $carbG = (int) round($carbKc / 4);
+            $fatG  = (int) round($fatKc / 9);
+            $proteinG = (int) round($proteinKc / 4);
+        }
 
         // Cibles glucidiques pour la prise de masse saine
         $targetCarbG = (int) round($d->startWeight * 5.0);  // cible (4.5–6 g/kg), on vise 5.0
@@ -652,8 +748,15 @@ final class ProgramPlanner
         $minCarbKc = $minCarbG * 4;
 
         // ---- LISSAGE MACRO (bulk) ----
-        // 1) Bornes lipides 22–32% et >= 0.8 g/kg
-        $lipMinPct = 22; $lipMaxPct = 32;
+        // 1) Bornes lipides dynamiques selon niveau d'activité
+        $activityId = (int)$d->activityLevelId;
+        if ($activityId <= 3) {
+            $lipMinPct = 22;
+            $lipMaxPct = 28;
+        } else {
+            $lipMinPct = 25;
+            $lipMaxPct = 32;
+        }
         $lipMinKc  = max((int) round($dailyKcal * $lipMinPct / 100), $minFatG * 9);
         $lipMaxKc  = (int) round($dailyKcal * $lipMaxPct / 100);
         $fatKc     = max($lipMinKc, min($fatKc, $lipMaxKc));
@@ -707,12 +810,14 @@ final class ProgramPlanner
         $profile = self::BASE_PROFILES['weight_gain'];
         $perMeal = $this->distributeByMealUse($dailyKcal, $d->mealUse, $profile);
 
-        // Durée (si targetWeight > startWeight)
+        // Durée (si targetWeight > startWeight), basée sur le weekly_kg effectif (pas de fallback)
         $durationDays = null;
         if ($d->targetWeight > 0 && $d->targetWeight > $d->startWeight) {
-            $deltaKg    = $d->targetWeight - $d->startWeight;
-            $weeklyRate = 0.25; // kg/sem
-            $durationDays = (int) round(abs($deltaKg) / $weeklyRate * 7);
+            $deltaKg = $d->targetWeight - $d->startWeight; // positif (gain)
+            $weeklyRate = !empty($sur['weekly_kg']) ? (float) $sur['weekly_kg'] : null;
+            if ($weeklyRate > 0) {
+                $durationDays = (int) round(($deltaKg / $weeklyRate) * 7);
+            }
         }
 
         return [
@@ -733,10 +838,11 @@ final class ProgramPlanner
                 'tdee' => (int) round($tdee),
                 'goal_adjust_kcal' => (int) round($dailyKcal - $tdee),
                 'goal_code' => 'weight_gain',
-                'weekly_pct' => $sur['weekly_pct'] ?? null,
                 'weekly_kg'  => $sur['weekly_kg'] ?? null,
+                'weekly_pct' => $sur['weekly_pct'] ?? null,
                 'cap_pct'    => $sur['cap_pct'] ?? null,
                 'capped_by'  => $sur['capped_by'] ?? null,
+                'requested_weekly_kg' => isset($d->hebdoLoss) ? (float) $d->hebdoLoss : null,
             ],
         ];
     }
@@ -782,36 +888,41 @@ final class ProgramPlanner
      */
     private function dailySurplusFromHebdoGain(CreateProgramData $d, float $tdee, bool $isRecomp = false): array
     {
-        // Par défaut viser ~0.25 kg/sem si non fourni
         $weeklyKgTarget = ($d->hebdoLoss ?? 0) > 0 ? (float) $d->hebdoLoss : 0.25;
 
-        // Cap hebdo: ~0.6% du poids/sem (lean bulk)
+        // Cap hebdo par % poids/sem (lean bulk ~0.6%)
         $weeklyKgCap = $d->startWeight > 0 ? round($d->startWeight * 0.006, 3) : $weeklyKgTarget;
-        $weeklyKg    = min($weeklyKgTarget, $weeklyKgCap);
-        $cappedBy    = null;
-        if ($weeklyKgTarget > $weeklyKg) {
-            $cappedBy = 'weekly_pct_cap';
-        }
+        $weeklyKgReq = min($weeklyKgTarget, $weeklyKgCap);
+        $cappedBy    = ($weeklyKgTarget > $weeklyKgReq) ? 'weekly_pct_cap' : null;
 
-        $weeklyPct        = ($d->startWeight > 0) ? ($weeklyKg / $d->startWeight) : 0.0;
-        $dailyFromHebdo   = ($weeklyKg * 7700.0) / 7.0; // kcal/j (positif)
+        // Demande en kcal/j
+        $dailyFromHebdo = ($weeklyKgReq * 7700.0) / 7.0; // positif
 
-        // Cap global par % TDEE (surplus)
+        // Cap TDEE (adaptatif)
         $bmi   = ($d->height > 0) ? ($d->startWeight / pow($d->height/100, 2)) : 23.0;
         $capPct = $this->surplusCapPct($bmi, (int) $d->activityLevelId, $isRecomp);
-        $maxDailySurplusByPct = ($tdee * $capPct);
+        $maxDailyByPct = $tdee * $capPct;
 
-        $adjust = (int) round(min($dailyFromHebdo, $maxDailySurplusByPct));
-        if ($dailyFromHebdo > $maxDailySurplusByPct) {
+        // Ajustement appliqué (effectif)
+        $adjust = (int) round(min($dailyFromHebdo, $maxDailyByPct));
+        if ($dailyFromHebdo > $maxDailyByPct) {
             $cappedBy = 'tdee_cap';
         }
 
+        // 🔴 Recalcule EFFECTIF (comme en perte de poids)
+        $effectiveWeeklyKg  = round(($adjust * 7) / 7700.0, 3);
+        $effectiveWeeklyPct = $d->startWeight > 0 ? round($effectiveWeeklyKg / $d->startWeight, 4) : 0.0;
+
+        // (Optionnel) plafond “théorique” si seul le cap TDEE s’applique (utile debug)
+        $maxWeeklyKgByTdee = round(($maxDailyByPct * 7) / 7700.0, 3);
+
         return [
-            'adjust'     => $adjust,   // kcal/j à AJOUTER
-            'weekly_kg'  => $weeklyKg,
-            'weekly_pct' => $weeklyPct,
-            'capped_by'  => $cappedBy,
-            'cap_pct'    => $capPct,
+            'adjust'        => $adjust,
+            'weekly_kg'     => $effectiveWeeklyKg,   // ✅ effectif
+            'weekly_pct'    => $effectiveWeeklyPct,  // ✅ effectif
+            'capped_by'     => $cappedBy,
+            'cap_pct'       => $capPct,
+            'max_weekly_kg' => $maxWeeklyKgByTdee,   // info
         ];
     }
 
@@ -1012,25 +1123,30 @@ final class ProgramPlanner
         [$proteinPct, $fatPct, $carbPct] = $this->macroRatios($dailyKcal, $proteinKc, $fatKc);
 
         // 8) Steps & water
-        $steps   = $this->stepsFor($d->activityLevelId, true); // plancher doux
+        $steps   = $this->stepsFor($d->activityLevelId, $deltaTarget < 0); // plancher doux seulement en direction perte
         $waterMl = $this->waterMlFor($wRef, $d->activityLevelId, $d->gender ?? null);
 
         // 9) Répartition repas (profil dépend de la direction)
         $profile = $deltaTarget < 0 ? self::BASE_PROFILES['weight_loss'] : self::BASE_PROFILES['gain_muscles'];
         $perMeal = $this->distributeByMealUse($dailyKcal, $d->mealUse, $profile);
 
-        // 10) Durée estimée jusqu'au poids cible, si fourni
+        // 10) Durée estimée jusqu'au poids cible, si fourni (rythme EFFECTIF prioritaire)
         $durationDays = null;
         if ($d->targetWeight > 0 && $d->startWeight > 0) {
             $distanceKg = abs($d->targetWeight - $d->startWeight);
-            // Priorité au rythme saisi (toujours positif), sinon rythme implicite calculé
-            $paceKgPerWeek = null;
-            if (!empty($d->hebdoLoss) && $d->hebdoLoss > 0) {
-                $paceKgPerWeek = (float) $d->hebdoLoss;
-            } elseif ($weeklyKg > 0) {
-                $paceKgPerWeek = $weeklyKg;
+
+            // 1) rythme effectif issu du module déficit/surplus (déjà capé)
+            $paceKgPerWeek = (!empty($defOrSur['weekly_kg']) && $defOrSur['weekly_kg'] > 0)
+                ? (float) $defOrSur['weekly_kg']
+                : null;
+
+            // 2) sinon, rythme implicite depuis l’écart à TDEE après cycling
+            if (!$paceKgPerWeek) {
+                $deltaDailyKcal = $dailyKcal - $tdee; // négatif si léger cut, positif si surplus
+                $paceKgPerWeek  = abs(($deltaDailyKcal * 7) / 7700);
             }
-            if ($paceKgPerWeek && $paceKgPerWeek > 0) {
+
+            if ($paceKgPerWeek > 0) {
                 $durationDays = (int) round(($distanceKg / $paceKgPerWeek) * 7);
             }
         }
@@ -1061,6 +1177,7 @@ final class ProgramPlanner
                 'weekly_pct' => $weeklyPct,
                 'cap_pct'    => $defOrSur['cap_pct'] ?? null,
                 'capped_by'  => $defOrSur['capped_by'] ?? null,
+                'requested_weekly_kg' => (!empty($d->hebdoLoss) && $d->hebdoLoss > 0) ? (float) $d->hebdoLoss : null,
             ],
         ];
     }

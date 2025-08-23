@@ -33,13 +33,13 @@ return new class extends Migration
             $table->integer('rest_kcal')->nullable();
             $table->integer('obj_steps')->nullable();
             $table->integer('obj_loss_weight_hebdo')->nullable();
+            $table->integer('max_loss_weight_hebdo')->nullable();
             $table->integer('time_to_achieve')->nullable();
 
             $table->double('start_weight')->nullable();
             $table->double('wanted_weight')->nullable();
             $table->double('obj_water')->nullable();
-            $table->double('volume_water')->nullable();// percent
-            $table->double('volume_water_by_each')->nullable();// percent
+            $table->double('volume_water_by_each')->nullable();
             $table->double('obj_proteins')->nullable();// percent
             $table->double('obj_lipids')->nullable();// percent
             $table->double('obj_glucides')->nullable(); // percent

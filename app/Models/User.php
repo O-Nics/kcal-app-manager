@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -25,11 +26,15 @@ use Laravel\Sanctum\HasApiTokens;
  * @property bool $limitation_profile
  * @property bool $accept_terms
  * @property Carbon|null $email_verified_at
+ * @property-read Collection<int, Session> $sessions
+ * @property-read Collection<int, Device> $devices
+ * @property-read Collection<int, Customer> $customers
  */
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, HasApiTokens, HasUuids, SoftDeletes;
+
 
     /**
      * The attributes that are mass assignable.

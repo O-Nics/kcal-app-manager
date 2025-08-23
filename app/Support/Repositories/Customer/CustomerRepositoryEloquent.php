@@ -3,6 +3,7 @@
 namespace App\Support\Repositories\Customer;
 
 use App\Features\Customer\Data\CreateProgramData;
+use App\Features\Customer\Data\RegisterCustomerData;
 use App\Features\Customer\Services\ProgramPlanner;
 use App\Models\ActivityLevel;
 use App\Models\Customer;
@@ -984,6 +985,21 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
         }
 
         return $customer;
+
+    }
+
+    public function storeCustomer(User $user, RegisterCustomerData $registerCustomerData): Customer
+    {
+        $customers = $user->customers;
+        foreach ($customers as $customer) {
+            if ($customer->username === $registerCustomerData->username) {
+                abort(400, "Ce profil existe déjà.");
+            }
+        }
+
+        return $user->customers()->create([
+            'username' => $registerCustomerData->username
+        ]);
 
     }
 }

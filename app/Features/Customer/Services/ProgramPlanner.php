@@ -480,11 +480,12 @@ final class ProgramPlanner
         $profile = self::BASE_PROFILES['weight_loss'];
         $perMeal = $this->distributeByMealUse($dailyKcal, $d->mealUse, $profile);
 
-        // Durée
+        // Durée prendr en compte le hebdo
+
         $durationDays = null;
         if ($d->targetWeight > 0) {
             $deltaKg    = $d->targetWeight - $d->startWeight; // négatif si perte
-            $weeklyRate = $d->hebdoLoss > 0 ? $d->hebdoLoss : 0.5;
+            $weeklyRate = $def['weekly_kg'];
             if ($weeklyRate > 0) { $durationDays = (int) round(abs($deltaKg) / $weeklyRate * 7); }
         }
 
@@ -617,6 +618,7 @@ final class ProgramPlanner
     }
 
     /** Goal 2: Weight gain (bulk) */
+    /*TODO tester les time to achieve*/
     private function planForWeightGain(CreateProgramData $d, float $tdee, float $bmr, float $pal): array
     {
         // Surplus piloté par hebdo (kg/sem) + cap adaptatif TDEE

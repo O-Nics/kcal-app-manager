@@ -7,6 +7,7 @@ use App\Features\Auth\Data\UserLoginData;
 use App\Features\Auth\Data\UserRegisterData;
 use App\Features\Auth\Services\TokenService;
 use App\Features\Customer\Data\CreateProgramData;
+use App\Features\Customer\Data\RegisterCustomerData;
 use App\Models\Customer;
 use App\Models\User;
 use App\Support\Abstract\Controller;
@@ -44,6 +45,38 @@ class CustomerController extends Controller
         return response()->json([
             'customer' => $customer,
         ]);
+    }
+
+    public function customers(): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+
+        return response()->json([
+            'customer' => $user->customers,
+        ]);
+    }
+
+    public function register(RegisterCustomerData $registerCustomerData): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        try {
+
+            $customer = $this->customerRepository->storeCustomer($user, $registerCustomerData);
+            return response()->json([
+                'success' => true,
+                'customer' => new $customer
+            ]);
+
+        }catch (Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+
+
     }
 
     public function createProgram(Customer $customer, CreateProgramData $createProgramData): JsonResponse

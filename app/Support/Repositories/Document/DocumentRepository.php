@@ -6,6 +6,7 @@ use App\Models\Document;
 use App\Models\Documentable;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Spatie\LaravelData\DataCollection;
 
 interface DocumentRepository
 {
@@ -14,7 +15,7 @@ interface DocumentRepository
 //     * @param Documentable $documentable
 //     * @return Collection
 //     */
-//    public function store(array $files, Documentable $documentable): Collection;
+    public function store(DataCollection $files, Documentable $documentable): Collection;
 //
 //    public function delete(Document $document): void;
 //

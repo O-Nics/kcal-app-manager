@@ -15,7 +15,11 @@ return new class extends Migration
             $table->id();
             $table->foreignUuid("customer_id")->constrained('customers')->cascadeOnDelete();
             $table->float('weight');
-            // ajouter les mensurations
+            $table->float('waist')->nullable();
+            $table->float('hip')->nullable();
+            $table->float('chest')->nullable();
+            $table->float('arm')->nullable();
+            $table->float('thigh')->nullable();
             $table->timestamps();
         });
     }

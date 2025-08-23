@@ -15,13 +15,14 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('file_name');
+            $table->string('disk');
             $table->integer('width')->nullable();
             $table->integer('height')->nullable();
             $table->integer('number')->nullable();
             $table->string("token")->nullable();
             $table->string('thumbs')->nullable();
             $table->string('collection')->nullable();
-            $table->boolean('is_private')->default(false);
+            $table->string('private')->nullable();
             $table->morphs('documentable');
             $table->timestamps();
         });

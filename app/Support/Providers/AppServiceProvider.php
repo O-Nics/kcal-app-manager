@@ -2,6 +2,8 @@
 
 namespace App\Support\Providers;
 
+use App\Features\Document\Observers\DocumentObserver;
+use App\Models\Document;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +21,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Document::observe(DocumentObserver::class);
+
     }
 }

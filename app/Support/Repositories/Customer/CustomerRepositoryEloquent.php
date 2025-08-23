@@ -3,7 +3,9 @@
 namespace App\Support\Repositories\Customer;
 
 use App\Features\Customer\Data\CreateProgramData;
+use App\Features\Customer\Data\PasswordCustomerData;
 use App\Features\Customer\Data\RegisterCustomerData;
+use App\Features\Customer\Data\WeightCustomerData;
 use App\Features\Customer\Services\ProgramPlanner;
 use App\Models\ActivityLevel;
 use App\Models\Customer;
@@ -11,12 +13,22 @@ use App\Models\Goal;
 use App\Models\MealType;
 use App\Models\User;
 use App\Support\Repositories\BaseRepository;
+use App\Support\Repositories\Document\DocumentRepository;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Hash;
+use Throwable;
 
 
 class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepository {
 
     protected string $model = Customer::class;
+
+    private DocumentRepository $documentRepository;
+
+    public function __construct()
+    {
+        $this->documentRepository = resolve(DocumentRepository::class);
+    }
 
 //
 //    public function storeCustomer(User $user, RegisterCustomerDTO $registerCustomerDTO): Customer
@@ -838,6 +850,8 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
 //            'volume_water' => $updateVolumeWaterDTO->volumeWater,
 //        ]);
 //    }
+
+
     public function findById(string $id): ?Customer
     {
         return $this->query()->where('id', $id)
@@ -1002,5 +1016,79 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
             'username' => $registerCustomerData->username
         ]);
 
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function updateNotification(Customer $customer, string $column, bool $value): void
+    {
+        if($customer->$column != $value) {
+            $customer->$column = $value;
+            $customer->saveOrFail();
+        }
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function deleteCustomer(Customer $customer): void
+    {
+        if ($customer->is_owner) {
+            abort(401,"Impossible de supprimer le profil du propriétaire.");
+        }
+
+        $customer->delete();
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function handlePasswordCustomer(Customer $customer, PasswordCustomerData $passwordCustomer) : void
+    {
+        if($passwordCustomer->profileLocked && $passwordCustomer->passwordCustomer){
+            $customer->profile_password = Hash::make($passwordCustomer->passwordCustomer);
+            $customer->profile_locked = true;
+        } else
+        {
+            $customer->profile_password = null;
+            $customer->profile_locked = false;
+        }
+        $customer->saveOrFail();
+    }
+
+    public function addWeight(Customer $customer, WeightCustomerData $weightCustomerData)
+    {
+        $weight = $customer->weights()->latest()->first();
+
+        if ($weight && $weight->created_at->diffInDays(Carbon::now()) < 1) {
+            $weight->update([
+                'weight' => $weightCustomerData->weight,
+                'waist' => $weightCustomerData->waist,
+                'hip' => $weightCustomerData->hip,
+                'chest' => $weightCustomerData->chest,
+                'arm' => $weightCustomerData->arm,
+                'thigh' => $weightCustomerData->thigh,
+            ]);
+
+            // check les documents ids par rapport au document que ce Weight a et supprimer les docs qui ne sont pas dans la liste
+            $this->documentRepository->store($weightCustomerData->files, $weight, 'weight', $customer->id);
+//            $this->documentRepository->store($weightCustomerData->files, $weight, 'weight');
+
+        } else {
+            $weight = $customer->customerWeights()->create([
+                'weight' => $weightCustomerData->weight,
+                'waist' => $weightCustomerData->waist,
+                'hip' => $weightCustomerData->hip,
+                'chest' => $weightCustomerData->chest,
+                'arm' => $weightCustomerData->arm,
+                'thigh' => $weightCustomerData->thigh,
+            ]);
+
+            $this->documentRepository->store($weightCustomerData->files, $weight, 'weight', $customer->id);
+//            $this->documentRepository->store($weightCustomerData->files, $weight, 'weight');
+        }
+
+        return $customer->customerWeights()->get();
     }
 }

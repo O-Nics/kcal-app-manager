@@ -21,6 +21,7 @@ use Illuminate\Support\Str;
  * @property string $id
  * @property string $user_id
  * @property int|null $goal_id
+ * @property int|null $activity_level_id
  * @property int|null $profile_image_id
  * @property string|null $gender
  * @property string $unique_key

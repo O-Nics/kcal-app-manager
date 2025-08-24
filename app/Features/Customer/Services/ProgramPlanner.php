@@ -70,7 +70,7 @@ final class ProgramPlanner
         ],
     ];
 
-    public function build(CreateProgramData $d): array
+    public function build(CreateProgramData $d): ProgramPlan
     {
         // 0) Préparation / âge
         $age = Carbon::now()->diffInYears($d->birthDate);
@@ -430,7 +430,7 @@ final class ProgramPlanner
 
 
     /** Goal 1: Weight loss */
-    private function planForWeightLoss(CreateProgramData $d, float $tdee, float $bmr, float $pal): array
+    private function planForWeightLoss(CreateProgramData $d, float $tdee, float $bmr, float $pal): ProgramPlan
     {
 
         // ---- Déficit piloté par hebdoLoss + sécurité centralisée ----
@@ -594,19 +594,19 @@ final class ProgramPlanner
             if ($weeklyRate > 0) { $durationDays = (int) round(abs($deltaKg) / $weeklyRate * 7); }
         }
 
-        return [
-            'daily_kcal' => $dailyKcal,
-            'macronutrients' => [
+        return new ProgramPlan(
+            daily_kcal: $dailyKcal,
+            macronutrients: [
                 'protein' => ['g' => (int)$proteinG, 'kcal' => (int)$proteinKc],
                 'fat'     => ['g' => (int)$fatG,     'kcal' => (int)$fatKc],
                 'carbs'   => ['g' => (int)$carbG,    'kcal' => (int)$carbKc],
             ],
-            'macro_ratios' => ['protein' => $proteinPct, 'fat' => $fatPct, 'carbs' => $carbPct],
-            'daily_steps_goal' => $steps,
-            'daily_water_goal_ml' => $waterMl,
-            'per_meal_kcal' => $perMeal,
-            'duration_days' => $durationDays,
-            'meta' => [
+            macro_ratios: ['protein' => $proteinPct, 'fat' => $fatPct, 'carbs' => $carbPct],
+            daily_steps_goal: $steps,
+            daily_water_goal_ml: $waterMl,
+            per_meal_kcal: $perMeal,
+            duration_days: $durationDays,
+            meta: [
                 'bmr' => (int) round($bmr),
                 'pal' => $pal,
                 'tdee' => (int) round($tdee),
@@ -618,11 +618,11 @@ final class ProgramPlanner
                 'cap_pct'   => $def['cap_pct'] ?? null,
                 'capped_by' => $def['capped_by'] ?? null,
             ],
-        ];
+        );
     }
 
     /** Goal 4: Gain muscles */
-    private function planForMuscleGain(CreateProgramData $d, float $tdee, float $bmr, float $pal): array
+    private function planForMuscleGain(CreateProgramData $d, float $tdee, float $bmr, float $pal): ProgramPlan
     {
         // Surplus piloté par hebdoGain (= hebdoLoss), cap non-conservateur (contrairement à recomp)
         $sur = $this->dailySurplusFromHebdoGain($d, $tdee, false);
@@ -761,20 +761,19 @@ final class ProgramPlanner
         $profile = self::BASE_PROFILES['gain_muscles'];
         $perMeal = $this->distributeByMealUse($dailyKcal, $d->mealUse, $profile);
 
-        return [
-            'daily_kcal' => $dailyKcal,
-            'macronutrients' => [
+        return new ProgramPlan(
+            daily_kcal: $dailyKcal,
+            macronutrients: [
                 'protein' => ['g' => $proteinG, 'kcal' => $proteinKc],
                 'fat'     => ['g' => $fatG,     'kcal' => $fatKc],
                 'carbs'   => ['g' => $carbG,    'kcal' => $carbKc],
             ],
-            'macro_ratios' => ['protein' => (int)$proteinPct, 'fat' => (int)$fatPct, 'carbs' => (int)$carbPct],
-            'daily_steps_goal' => $steps,
-            'daily_water_goal_ml' => $waterMl,
-            'per_meal_kcal' => $perMeal,
-            'duration_days' => null,
-            'training_days' => $d->trainingDaysOfWeek ?? [],
-            'meta' => [
+            macro_ratios: ['protein' => (int)$proteinPct, 'fat' => (int)$fatPct, 'carbs' => (int)$carbPct],
+            daily_steps_goal: $steps,
+            daily_water_goal_ml: $waterMl,
+            per_meal_kcal: $perMeal,
+            duration_days: null,
+            meta: [
                 'bmr' => (int) round($bmr),
                 'pal' => $pal,
                 'tdee' => (int) round($tdee),
@@ -786,10 +785,11 @@ final class ProgramPlanner
                 'cap_pct'   => $sur['cap_pct'] ?? null,
                 'capped_by' => $sur['capped_by'] ?? null,
             ],
-        ];
+            training_days: $d->trainingDaysOfWeek ?? [],
+        );
     }
 
-    private function planForWeightGain(CreateProgramData $d, float $tdee, float $bmr, float $pal): array
+    private function planForWeightGain(CreateProgramData $d, float $tdee, float $bmr, float $pal): ProgramPlan
     {
         // Surplus piloté par hebdo (kg/sem) + cap adaptatif TDEE
         $sur = $this->dailySurplusFromHebdoGain($d, $tdee);
@@ -917,19 +917,19 @@ final class ProgramPlanner
             }
         }
 
-        return [
-            'daily_kcal' => $dailyKcal,
-            'macronutrients' => [
+        return new ProgramPlan(
+            daily_kcal: $dailyKcal,
+            macronutrients: [
                 'protein' => ['g' => (int)$proteinG, 'kcal' => (int)$proteinKc],
                 'fat'     => ['g' => (int)$fatG,     'kcal' => (int)$fatKc],
                 'carbs'   => ['g' => (int)$carbG,    'kcal' => (int)$carbKc],
             ],
-            'macro_ratios' => ['protein' => $proteinPct, 'fat' => $fatPct, 'carbs' => $carbPct],
-            'daily_steps_goal' => $steps,
-            'daily_water_goal_ml' => $waterMl,
-            'per_meal_kcal' => $perMeal,
-            'duration_days' => $durationDays,
-            'meta' => [
+            macro_ratios: ['protein' => $proteinPct, 'fat' => $fatPct, 'carbs' => $carbPct],
+            daily_steps_goal: $steps,
+            daily_water_goal_ml: $waterMl,
+            per_meal_kcal: $perMeal,
+            duration_days: $durationDays,
+            meta: [
                 'bmr' => (int) round($bmr),
                 'pal' => $pal,
                 'tdee' => (int) round($tdee),
@@ -941,11 +941,11 @@ final class ProgramPlanner
                 'capped_by'  => $sur['capped_by'] ?? null,
                 'requested_weekly_kg' => isset($d->hebdoLoss) ? (float) $d->hebdoLoss : null,
             ],
-        ];
+        );
     }
 
     /** Goal 3: Maintain */
-    private function planForMaintain(CreateProgramData $d, float $tdee, float $bmr, float $pal): array
+    private function planForMaintain(CreateProgramData $d, float $tdee, float $bmr, float $pal): ProgramPlan
     {
         // Maintenance avec garde-fous identiques à weight_loss (plancher % TDEE + min par sexe)
         $dailyKcal = $this->clampDailyKcalForSafety((int) round($tdee), $tdee, $d->gender ?? null);
@@ -1020,23 +1020,23 @@ final class ProgramPlanner
         $profile = self::BASE_PROFILES['maintain'];
         $perMeal = $this->distributeByMealUse($dailyKcal, $d->mealUse, $profile);
 
-        return [
-            'daily_kcal' => $dailyKcal,
-            'macronutrients' => [
+        return new ProgramPlan(
+            daily_kcal: $dailyKcal,
+            macronutrients: [
                 'protein' => ['g' => (int)$proteinG, 'kcal' => (int)$proteinKc],
                 'fat'     => ['g' => (int)$fatG,     'kcal' => (int)$fatKc],
                 'carbs'   => ['g' => (int)$carbG,    'kcal' => (int)$carbKc],
             ],
-            'macro_ratios' => ['protein' => $proteinPct, 'fat' => $fatPct, 'carbs' => $carbPct],
-            'daily_steps_goal' => $steps,
-            'daily_water_goal_ml' => $waterMl,
-            'per_meal_kcal' => $perMeal,
-            'duration_days' => null,
-            'meta' => [ 'bmr' => (int) round($bmr), 'pal' => $pal, 'tdee' => (int) round($tdee), 'goal_adjust_kcal' => 0, 'goal_code' => 'maintain' ],
-        ];
+            macro_ratios: ['protein' => $proteinPct, 'fat' => $fatPct, 'carbs' => $carbPct],
+            daily_steps_goal: $steps,
+            daily_water_goal_ml: $waterMl,
+            per_meal_kcal: $perMeal,
+            duration_days: null,
+            meta: [ 'bmr' => (int) round($bmr), 'pal' => $pal, 'tdee' => (int) round($tdee), 'goal_adjust_kcal' => 0, 'goal_code' => 'maintain' ],
+        );
     }
 
-    private function planForRecomp(CreateProgramData $d, float $tdee, float $bmr, float $pal): array
+    private function planForRecomp(CreateProgramData $d, float $tdee, float $bmr, float $pal): ProgramPlan
     {
         // 0) Direction par rapport au poids cible (perte si target < start, gain si target > start)
         $deltaTarget = ($d->targetWeight > 0) ? ($d->targetWeight - $d->startWeight) : 0.0;
@@ -1169,20 +1169,19 @@ final class ProgramPlanner
             }
         }
 
-        return [
-            'daily_kcal' => $dailyKcal,
-            'macronutrients' => [
+        return new ProgramPlan(
+            daily_kcal: $dailyKcal,
+            macronutrients: [
                 'protein' => ['g' => $proteinG, 'kcal' => $proteinKc],
                 'fat'     => ['g' => $fatG,     'kcal' => $fatKc],
                 'carbs'   => ['g' => $carbG,    'kcal' => $carbKc],
             ],
-            'macro_ratios' => ['protein' => (int)$proteinPct, 'fat' => (int)$fatPct, 'carbs' => (int)$carbPct],
-            'daily_steps_goal' => $steps,
-            'daily_water_goal_ml' => $waterMl,
-            'per_meal_kcal' => $perMeal,
-            'training_days' => $d->trainingDaysOfWeek ?? [],
-            'duration_days' => $durationDays,
-            'meta' => [
+            macro_ratios: ['protein' => (int)$proteinPct, 'fat' => (int)$fatPct, 'carbs' => (int)$carbPct],
+            daily_steps_goal: $steps,
+            daily_water_goal_ml: $waterMl,
+            per_meal_kcal: $perMeal,
+            duration_days: $durationDays,
+            meta: [
                 'bmr' => (int) round($bmr),
                 'pal' => $pal,
                 'tdee' => (int) round($tdee),
@@ -1198,6 +1197,206 @@ final class ProgramPlanner
                 'capped_by'  => $defOrSur['capped_by'] ?? null,
                 'requested_weekly_kg' => (!empty($d->hebdoLoss) && $d->hebdoLoss > 0) ? (float) $d->hebdoLoss : null,
             ],
+            training_days: $d->trainingDaysOfWeek ?? [],
+        );
+    }
+}
+
+final class ProgramPlan implements \JsonSerializable
+{
+    public readonly int $daily_kcal;
+    public readonly Macros $macronutrients;
+    public readonly MacroRatios $macro_ratios;
+    public readonly int $daily_steps_goal;
+    public readonly int $daily_water_goal_ml;
+    public readonly array $per_meal_kcal;
+    public readonly ?int $duration_days;
+    public readonly MetaData $meta;
+    public readonly ?array $training_days;
+
+    public function __construct(
+        int   $daily_kcal,
+        Macros|array $macronutrients,
+        MacroRatios|array $macro_ratios,
+        int   $daily_steps_goal,
+        int   $daily_water_goal_ml,
+        array $per_meal_kcal,
+        ?int  $duration_days,
+        MetaData|array $meta,
+        ?array $training_days = null,
+    ) {
+        $this->daily_kcal = $daily_kcal;
+        $this->macronutrients = $macronutrients instanceof Macros ? $macronutrients : Macros::fromArray($macronutrients);
+        $this->macro_ratios   = $macro_ratios   instanceof MacroRatios ? $macro_ratios : MacroRatios::fromArray($macro_ratios);
+        $this->daily_steps_goal = $daily_steps_goal;
+        $this->daily_water_goal_ml = $daily_water_goal_ml;
+        $this->per_meal_kcal = $per_meal_kcal;
+        $this->duration_days = $duration_days;
+        $this->meta = $meta instanceof MetaData ? $meta : MetaData::fromArray($meta);
+        $this->training_days = $training_days;
+    }
+
+    // Aliases / helpers
+    public function macroRatios(): MacroRatios { return $this->macro_ratios; }
+    public function macro_ratio(): MacroRatios { return $this->macro_ratios; }
+    public function macros(): Macros { return $this->macronutrients; }
+    public function perMeal(): array { return $this->per_meal_kcal; }
+    public function waterMl(): int { return $this->daily_water_goal_ml; }
+    public function steps(): int { return $this->daily_steps_goal; }
+
+    public function jsonSerialize(): array
+    {
+        return [
+            'daily_kcal' => $this->daily_kcal,
+            'macronutrients' => $this->macronutrients->jsonSerialize(),
+            'macro_ratios' => $this->macro_ratios->jsonSerialize(),
+            'daily_steps_goal' => $this->daily_steps_goal,
+            'daily_water_goal_ml' => $this->daily_water_goal_ml,
+            'per_meal_kcal' => $this->per_meal_kcal,
+            'duration_days' => $this->duration_days,
+            'training_days' => $this->training_days,
+            'meta' => $this->meta->jsonSerialize(),
         ];
+    }
+}
+
+final class MacroItem implements \JsonSerializable
+{
+    public function __construct(
+        public readonly int $g,
+        public readonly int $kcal,
+    ) {}
+
+    public static function fromArray(array $a): self
+    {
+        return new self(g: (int) ($a['g'] ?? 0), kcal: (int) ($a['kcal'] ?? 0));
+    }
+
+    public function jsonSerialize(): array
+    {
+        return ['g' => $this->g, 'kcal' => $this->kcal];
+    }
+}
+
+final class Macros implements \JsonSerializable
+{
+    public function __construct(
+        public readonly MacroItem $protein,
+        public readonly MacroItem $fat,
+        public readonly MacroItem $carbs,
+    ) {}
+
+    public static function fromArray(array $a): self
+    {
+        return new self(
+            protein: MacroItem::fromArray($a['protein'] ?? []),
+            fat:     MacroItem::fromArray($a['fat'] ?? []),
+            carbs:   MacroItem::fromArray($a['carbs'] ?? []),
+        );
+    }
+
+    public function jsonSerialize(): array
+    {
+        return [
+            'protein' => $this->protein->jsonSerialize(),
+            'fat'     => $this->fat->jsonSerialize(),
+            'carbs'   => $this->carbs->jsonSerialize(),
+        ];
+    }
+}
+
+final class MacroRatios implements \JsonSerializable
+{
+    public function __construct(
+        public readonly int $protein,
+        public readonly int $fat,
+        public readonly int $carbs,
+    ) {}
+
+    public static function fromArray(array $a): self
+    {
+        return new self(
+            protein: (int) ($a['protein'] ?? 0),
+            fat:     (int) ($a['fat'] ?? 0),
+            carbs:   (int) ($a['carbs'] ?? 0),
+        );
+    }
+
+    public function jsonSerialize(): array
+    {
+        return ['protein' => $this->protein, 'fat' => $this->fat, 'carbs' => $this->carbs];
+    }
+}
+
+final class MetaData implements \JsonSerializable
+{
+    private array $extra = [];
+
+    public function __construct(
+        public readonly ?int $bmr = null,
+        public readonly ?float $pal = null,
+        public readonly ?int $tdee = null,
+        public readonly ?int $goal_adjust_kcal = null,
+        public readonly ?string $goal_code = null,
+        public readonly ?float $weekly_pct = null,
+        public readonly ?float $weekly_kg = null,
+        public readonly ?float $max_weekly_kg = null,
+        public readonly ?float $cap_pct = null,
+        public readonly ?string $capped_by = null,
+        public readonly ?int $weekly_avg_kcal = null,
+        public readonly ?int $train_kcal = null,
+        public readonly ?int $rest_kcal = null,
+        public readonly ?float $direction = null,
+        public readonly ?float $requested_weekly_kg = null,
+    ) {}
+
+    public static function fromArray(array $a): self
+    {
+        $obj = new self(
+            bmr: $a['bmr'] ?? null,
+            pal: isset($a['pal']) ? (float) $a['pal'] : null,
+            tdee: $a['tdee'] ?? null,
+            goal_adjust_kcal: $a['goal_adjust_kcal'] ?? null,
+            goal_code: $a['goal_code'] ?? null,
+            weekly_pct: isset($a['weekly_pct']) ? (float) $a['weekly_pct'] : null,
+            weekly_kg: isset($a['weekly_kg']) ? (float) $a['weekly_kg'] : null,
+            max_weekly_kg: isset($a['max_weekly_kg']) ? (float) $a['max_weekly_kg'] : null,
+            cap_pct: isset($a['cap_pct']) ? (float) $a['cap_pct'] : null,
+            capped_by: $a['capped_by'] ?? null,
+            weekly_avg_kcal: $a['weekly_avg_kcal'] ?? null,
+            train_kcal: $a['train_kcal'] ?? null,
+            rest_kcal: $a['rest_kcal'] ?? null,
+            direction: isset($a['direction']) ? (float) $a['direction'] : null,
+            requested_weekly_kg: isset($a['requested_weekly_kg']) ? (float) $a['requested_weekly_kg'] : null,
+        );
+        $obj->extra = array_diff_key($a, array_flip([
+            'bmr','pal','tdee','goal_adjust_kcal','goal_code','weekly_pct','weekly_kg','cap_pct','capped_by','weekly_avg_kcal','train_kcal','rest_kcal','direction','requested_weekly_kg'
+        ]));
+        return $obj;
+    }
+
+    public function __get(string $name)
+    {
+        return $this->extra[$name] ?? null;
+    }
+
+    public function jsonSerialize(): array
+    {
+        return array_filter([
+            'bmr' => $this->bmr,
+            'pal' => $this->pal,
+            'tdee' => $this->tdee,
+            'goal_adjust_kcal' => $this->goal_adjust_kcal,
+            'goal_code' => $this->goal_code,
+            'weekly_pct' => $this->weekly_pct,
+            'weekly_kg' => $this->weekly_kg,
+            'cap_pct' => $this->cap_pct,
+            'capped_by' => $this->capped_by,
+            'weekly_avg_kcal' => $this->weekly_avg_kcal,
+            'train_kcal' => $this->train_kcal,
+            'rest_kcal' => $this->rest_kcal,
+            'direction' => $this->direction,
+            'requested_weekly_kg' => $this->requested_weekly_kg,
+        ]) + $this->extra;
     }
 }

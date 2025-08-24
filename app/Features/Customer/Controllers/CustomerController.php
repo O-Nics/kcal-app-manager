@@ -9,6 +9,7 @@ use App\Features\Auth\Services\TokenService;
 use App\Features\Customer\Data\CreateProgramData;
 use App\Features\Customer\Data\PasswordCustomerData;
 use App\Features\Customer\Data\RegisterCustomerData;
+use App\Features\Customer\Data\UpdateGoalData;
 use App\Features\Customer\Data\UpdateNotificationData;
 use App\Features\Customer\Data\WeightCustomerData;
 use App\Models\Customer;
@@ -177,6 +178,16 @@ class CustomerController extends Controller
                 'message' => $e->getMessage()
             ]);
         }
+
+
+    }
+
+    public function updateGoal(Customer $customer, UpdateGoalData $updateGoalData): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $this->ensureCustomer->userCanManageCustomer($user, $customer);
+
 
 
     }

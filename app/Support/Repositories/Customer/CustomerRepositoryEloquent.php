@@ -15,6 +15,7 @@ use App\Models\MealType;
 use App\Models\User;
 use App\Support\Repositories\BaseRepository;
 use App\Support\Repositories\Document\DocumentRepository;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Throwable;
@@ -870,6 +871,21 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
         }
 
         $customer->username = $createProgramData->username;
+
+
+        $customer->weights()->create([
+            'weight' => $createProgramData->startWeight,
+        ]);
+
+
+        return $this->planAndAddToCustomer($createProgramData, $customer);
+
+    }
+
+    private function planAndAddToCustomer(CreateProgramData $createProgramData, Customer $customer): Customer{
+        $planner = new ProgramPlanner();
+        $program = $planner->build($createProgramData);
+
         $customer->gender = $createProgramData->gender;
 
         if(Goal::query()->find($createProgramData->goalId)){
@@ -878,40 +894,31 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
             $customer->goal()->associate(Goal::query()->where('code', '1')->first());
         }
 
+        if(ActivityLevel::query()->find($createProgramData->activityLevelId)){
+            $customer->activityLevel()->associate(ActivityLevel::query()->find($createProgramData->activityLevelId));
+        } else {
+            $customer->activityLevel()->associate(ActivityLevel::query()->where('code', '1')->first());
+        }
+
         $customer->height = $createProgramData->height;
         $customer->birth_date = $createProgramData->birthDate;
         $customer->wanted_weight = $createProgramData->targetWeight;
         $customer->start_weight = $createProgramData->startWeight;
-        $customer->obj_water = 2.0;
 
-        if(ActivityLevel::query()->find($createProgramData->activityLevelId)){
-            $customer->goal()->associate(ActivityLevel::query()->find($createProgramData->activityLevelId));
-        } else {
-            $customer->goal()->associate(ActivityLevel::query()->where('code', '1')->first());
-        }
-
-        $customer->obj_loss_weight_hebdo = $createProgramData->hebdoLoss;
-
-        $customer->weights()->create([
-            'weight' => $createProgramData->startWeight,
-        ]);
-
-        $planner = new ProgramPlanner();
-        $program = $planner->build($createProgramData);
-        $customer->obj_kcals = $program['daily_kcal'];
-        $customer->training_days_of_week = isset($program['training_days_of_week']) ? $program['training_days_of_week'] : null;
-        $customer->obj_steps = $program['daily_steps_goal'];
-        $customer->obj_loss_weight_hebdo = isset( $program['meta']['weekly_kg']) ?  $program['meta']['weekly_kg'] : null;
-        $customer->max_loss_weight_hebdo = isset( $program['meta']['max_weekly_kg']) ?  $program['meta']['max_weekly_kg'] : null;
-        $customer->time_to_achieve = (int)  $program['duration_days'];
-        $customer->obj_proteins = (int)  $program['macro_ratios']['protein'];
-        $customer->obj_lipids = (int) $program['macro_ratios']['fat'];
-        $customer->obj_glucides = (int) $program['macro_ratios']['carbs'];
-        $customer->obj_water = (int) $program['daily_water_goal_ml'];
+        $customer->obj_kcals = $program->daily_kcal;
+        $customer->training_days_of_week = $program->training_days ?? null;
+        $customer->obj_steps = $program->daily_steps_goal;
+        $customer->obj_loss_weight_hebdo = $program->meta->weekly_kg ??  null;
+        $customer->max_loss_weight_hebdo = $program->meta->max_weekly_kg ?? null;
+        $customer->time_to_achieve = (int)  $program->duration_days ?? 0;
+        $customer->obj_proteins =   $program->macro_ratios->protein;
+        $customer->obj_lipids =  $program->macro_ratios->fat;
+        $customer->obj_glucides =  $program->macro_ratios->carbs;
+        $customer->obj_water = (int) $program->daily_water_goal_ml;
         $customer->type_water = 'glass';
         $customer->volume_water_by_each = 250;
-        $customer->train_kcal = (int) isset($program['meta']['train_kcal']) ? $program['meta']['train_kcal'] : null;
-        $customer->rest_kcal = (int) isset($program['meta']['rest_kcal']) ? $program['meta']['rest_kcal'] : null;
+        $customer->train_kcal = $program->meta->train_kcal ?? null;
+        $customer->rest_kcal = $program->meta->rest_kcal ?? null;
         $customer->form_passed_at = Carbon::now();
         $customer->save();
 
@@ -920,80 +927,80 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
             /** * @var MealType $type */
             switch ($type->code) {
                 case 1:
-                    if((isset($program['per_meal_kcal']['breakfast']))){
+                    if((isset($program->per_meal_kcal['breakfast']))){
                         if($customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->exists()){
                             $customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->update([
-                                'kcal' => (int) $program['per_meal_kcal']['breakfast'],
+                                'kcal' => (int) $program->per_meal_kcal['breakfast'],
                                 'starts_at' => Carbon::now()->startOfDay(),
                             ]);
                         } else {
                             $customer->objectiveKcalMealTypes()->create([
                                 'meal_type_id' => $type->id,
-                                'kcal' => (int) $program['per_meal_kcal']['breakfast'],
+                                'kcal' => (int) $program->per_meal_kcal['breakfast'],
                                 'starts_at' => Carbon::now()->startOfDay(),
                             ]);
                         }
                     }
                     break;
                 case 2:
-                    if((isset($program['per_meal_kcal']['snack_morning']))){
+                    if((isset($program->per_meal_kcal['snack_morning']))){
                         if($customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->exists()){
                             $customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->update([
-                                'kcal' => (int) $program['per_meal_kcal']['snack_morning'],
+                                'kcal' => (int) $program->per_meal_kcal['snack_morning'],
                                 'starts_at' => Carbon::now()->startOfDay(),
                             ]);
                         } else {
                             $customer->objectiveKcalMealTypes()->create([
                                 'meal_type_id' => $type->id,
-                                'kcal' => (int) $program['per_meal_kcal']['snack_morning'],
+                                'kcal' => (int) $program->per_meal_kcal['snack_morning'],
                                 'starts_at' => Carbon::now()->startOfDay(),
                             ]);
                         }
                     }
                     break;
                 case 3:
-                    if((isset($program['per_meal_kcal']['lunch']))){
+                    if((isset($program->per_meal_kcal['lunch']))){
                         if($customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->exists()){
                             $customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->update([
-                                'kcal' => (int) $program['per_meal_kcal']['lunch'],
+                                'kcal' => (int) $program->per_meal_kcal['lunch'],
                                 'starts_at' => Carbon::now()->startOfDay(),
                             ]);
                         } else {
                             $customer->objectiveKcalMealTypes()->create([
                                 'meal_type_id' => $type->id,
-                                'kcal' => (int) $program['per_meal_kcal']['lunch'],
+                                'kcal' => (int) $program->per_meal_kcal['lunch'],
                                 'starts_at' => Carbon::now()->startOfDay(),
                             ]);
                         }
                     }
                     break;
                 case 4:
-                    if((isset($program['per_meal_kcal']['snack_afternoon']))){
+                    if((isset($program->per_meal_kcal['snack_afternoon']))){
                         if($customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->exists()){
                             $customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->update([
-                                'kcal' => (int) $program['per_meal_kcal']['snack_afternoon'],
+                                'kcal' => (int) $program->per_meal_kcal['snack_afternoon'],
                                 'starts_at' => Carbon::now()->startOfDay(),
                             ]);
                         } else {
                             $customer->objectiveKcalMealTypes()->create([
                                 'meal_type_id' => $type->id,
-                                'kcal' => (int) $program['per_meal_kcal']['snack_afternoon'],
+                                'kcal' => (int) $program->per_meal_kcal['snack_afternoon'],
                                 'starts_at' => Carbon::now()->startOfDay(),
                             ]);
                         }
                     }
                     break;
                 case 5:
-                    if((isset($program['per_meal_kcal']['dinner']))){
+                    if((isset($program->per_meal_kcal['dinner']))){
                         if($customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->exists()){
                             $customer->objectiveKcalMealTypes()->where('meal_type_id', $type->id)->update([
-                                'kcal' => (int) $program['per_meal_kcal']['dinner'],
+                                'kcal' => (int) $program->per_meal_kcal['dinner'],
                                 'starts_at' => Carbon::now()->startOfDay(),
                             ]);
                         } else {
                             $customer->objectiveKcalMealTypes()->create([
                                 'meal_type_id' => $type->id,
-                                'kcal' => (int) $program['per_meal_kcal']['dinner'],
+                                'kcal' => (int) $program->per_meal_kcal['dinner'],
                                 'starts_at' => Carbon::now()->startOfDay(),
                             ]);
                         }
@@ -1002,9 +1009,7 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
         }
 
         return $customer;
-
     }
-
     public function storeCustomer(User $user, RegisterCustomerData $registerCustomerData): Customer
     {
         $customers = $user->customers;
@@ -1107,4 +1112,7 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
 
         return $customer;
     }
+
+
+
 }

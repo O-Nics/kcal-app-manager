@@ -16,26 +16,31 @@ class MealTypesTableSeeder extends Seeder
             [
                 'id' => 1,
                 'name' => 'Petit-déjeuner',
+                'value' => 'breakfast',
                 'code' => 1,
             ],
             [
                 'id' => 2,
                 'name' => 'Collation matinale',
+                'value' => 'snack_morning',
                 'code' => 2,
             ],
             [
                 'id' => 3,
                 'name' => 'Déjeuner',
+                'value' => 'lunch',
                 'code' => 3,
             ],
             [
                 'id' => 4,
                 'name' => 'Collation de l’après-midi',
+                'value' => 'snack_afternoon',
                 'code' => 4,
             ],
             [
                 'id' => 5,
                 'name' => 'Dîner',
+                'value' => 'dinner',
                 'code' => 5,
             ],
         ];
@@ -59,6 +64,7 @@ class MealTypesTableSeeder extends Seeder
                     'id' => $mealType['id'],
                     'name' => $mealType['name'],
                     'code' => $mealType['code'],
+                    'value' => $mealType['value'],
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);

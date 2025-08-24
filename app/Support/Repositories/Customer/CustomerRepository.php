@@ -25,5 +25,7 @@ interface CustomerRepository
 
     public function addWeight(Customer $customer, WeightCustomerData $weightCustomerData);
 
+    public function updateOneColumn(string $column, mixed $value, Customer $customer): Customer;
+
 
 }

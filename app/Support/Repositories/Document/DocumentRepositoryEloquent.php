@@ -123,4 +123,8 @@ class DocumentRepositoryEloquent extends BaseRepository implements DocumentRepos
         return $documents;
     }
 
+    public function delete(Document $document): void
+    {
+       $document->delete();
+    }
 }

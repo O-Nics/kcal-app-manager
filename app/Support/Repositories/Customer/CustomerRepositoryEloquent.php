@@ -8,6 +8,7 @@ use App\Features\Customer\Data\RegisterCustomerData;
 use App\Features\Customer\Data\WeightCustomerData;
 use App\Features\Customer\Services\ProgramPlanner;
 use App\Models\ActivityLevel;
+use App\Models\BodyMass;
 use App\Models\Customer;
 use App\Models\Goal;
 use App\Models\MealType;
@@ -861,6 +862,7 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
 
     public function createProgramCustomer(CreateProgramData $createProgramData, ?Customer $customer, User $user): Customer
     {
+
         if($customer->is_owner){
             $user->update([
                 'name' => $createProgramData->username,
@@ -896,8 +898,8 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
 
         $planner = new ProgramPlanner();
         $program = $planner->build($createProgramData);
-        dd($program);
         $customer->obj_kcals = $program['daily_kcal'];
+        $customer->training_days_of_week = isset($program['training_days_of_week']) ? $program['training_days_of_week'] : null;
         $customer->obj_steps = $program['daily_steps_goal'];
         $customer->obj_loss_weight_hebdo = isset( $program['meta']['weekly_kg']) ?  $program['meta']['weekly_kg'] : null;
         $customer->max_loss_weight_hebdo = isset( $program['meta']['max_weekly_kg']) ?  $program['meta']['max_weekly_kg'] : null;
@@ -911,7 +913,7 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
         $customer->train_kcal = (int) isset($program['meta']['train_kcal']) ? $program['meta']['train_kcal'] : null;
         $customer->rest_kcal = (int) isset($program['meta']['rest_kcal']) ? $program['meta']['rest_kcal'] : null;
         $customer->form_passed_at = Carbon::now();
-
+        $customer->save();
 
         $mealType = MealType::query()->get();
         foreach ($mealType as $type ) {
@@ -1070,10 +1072,14 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
                 'arm' => $weightCustomerData->arm,
                 'thigh' => $weightCustomerData->thigh,
             ]);
+            /** @var BodyMass $weight */
+            $weight->load('files');
 
-            // check les documents ids par rapport au document que ce Weight a et supprimer les docs qui ne sont pas dans la liste
-            $this->documentRepository->store($weightCustomerData->files, $weight, 'weight', $customer->id);
-//            $this->documentRepository->store($weightCustomerData->files, $weight, 'weight');
+            foreach ($weight->files as $document) {
+                if (!in_array($document->id, $weightCustomerData->documentIds ?? [])) {
+                    $this->documentRepository->delete($document);
+                }
+            }
 
         } else {
             $weight = $customer->customerWeights()->create([
@@ -1085,10 +1091,20 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
                 'thigh' => $weightCustomerData->thigh,
             ]);
 
-            $this->documentRepository->store($weightCustomerData->files, $weight, 'weight', $customer->id);
-//            $this->documentRepository->store($weightCustomerData->files, $weight, 'weight');
         }
 
+        $this->documentRepository->store($weightCustomerData->files, $weight, 'weight', $customer->id);
+
         return $customer->customerWeights()->get();
+    }
+
+    public function updateOneColumn(string $column, mixed $value, Customer $customer): Customer
+    {
+        if ($customer->$column != $value) {
+            $customer->$column = $value;
+            $customer->save();
+        }
+
+        return $customer;
     }
 }

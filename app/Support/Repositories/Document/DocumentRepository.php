@@ -17,7 +17,7 @@ interface DocumentRepository
 //     */
     public function store(DataCollection $files, Documentable $documentable): Collection;
 //
-//    public function delete(Document $document): void;
+    public function delete(Document $document): void;
 //
 //    public function rename(Document $document, string $name): Document;
 

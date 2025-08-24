@@ -56,6 +56,7 @@ use Illuminate\Support\Str;
  * @property string|null $picture_from_provider
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property array|null $training_days_of_week
  *
  * @property-read User $user
  * @property-read Goal|null $goal
@@ -73,7 +74,8 @@ class Customer extends Model implements Documentable
         'unique_key',
         'username',
         'profile_password',
-        'activity',
+        'activity_level_id',
+        'goal_id',
         'height',
         'type_water',
         'obj_kcals',
@@ -102,6 +104,7 @@ class Customer extends Model implements Documentable
         'rated_app_at',
         'max_loss_weight_hebdo',
         'picture_from_provider',
+        'training_days_of_week',
     ];
 
     protected static function boot()
@@ -167,6 +170,11 @@ class Customer extends Model implements Documentable
             ->with('mealType');
     }
 
+    public function getMealTypeAsArray (): array
+    {
+        return $this->objectiveKcalMealTypes
+            ->map(fn ($type) => $type->mealType->value)
+            ->toArray();
+    }
 
-    //
 }

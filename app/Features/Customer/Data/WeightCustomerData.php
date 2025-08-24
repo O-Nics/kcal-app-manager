@@ -45,8 +45,7 @@ class WeightCustomerData extends Data
     #[Nullable]
     public ?float $thigh;
 
-
     #[Nullable]
-    public ?array $documentsIds;
+    public ?array $documentIds;
 
 }

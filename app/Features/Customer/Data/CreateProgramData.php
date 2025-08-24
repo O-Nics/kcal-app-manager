@@ -2,6 +2,7 @@
 
 namespace App\Features\Customer\Data;
 
+use App\Models\Customer;
 use App\Support\Data\DeviceData;
 use Illuminate\Support\Carbon;
 use Spatie\LaravelData\Attributes\Validation\Confirmed;
@@ -65,7 +66,46 @@ class CreateProgramData extends Data
     public array $mealUse;
 
 
-    public ?int $trainingDaysOfWeek = null; // Number of training days per week, if applicable
+    public ?array $trainingDaysOfWeek = null; // Number of training days per week, if applicable
     // tableau avec breackfast, lunch, dinner, snacks ou only  lunch, dinner, snacks etc
+
+
+    /**
+     * Crée un CreateProgramData à partir d'un Customer + overrides explicites.
+     * Seuls quelques champs peuvent être inférés; les autres (obligatoires) doivent être fournis dans $overrides.
+     * Exemple d'appel :
+     *   CreateProgramData::fromCustomer($customer, [
+     *     'height' => 185,
+     *     'startWeight' => 100,
+     *     'targetWeight' => 80,
+     *     'gender' => 'male',
+     *     'goalId' => '1',
+     *     'activityLevelId' => '3',
+     *     'hebdoLoss' => 0.5,
+     *     'mealUse' => ['breakfast','lunch','dinner'],
+     *     'trainingDaysOfWeek' => 3,
+     *   ]);
+     */
+    public static function fromCustomer(Customer $customer, array $overrides = []): self
+    {
+        $base = [
+            'username' => $customer->username ?? '',
+            'height' => $customer->height ?? 0.0,
+            'startWeight' => $customer->start_weight ?? 0.0,
+            'targetWeight' => $customer->wanted_weight ?? 0.0,
+            'gender' => $customer->gender ?? 'other',
+            'goalId' => $customer->goal->id ?? 1,
+            'activityLevelId' => $customer->activityLevel->id ?? 1,
+            'birthDate' => $customer->birth_date
+                ? (\is_string($customer->birth_date) ? Carbon::parse($customer->birth_date) : $customer->birth_date)
+                : null,
+            'hebdoLoss' => $customer->obj_loss_weight_hebdo ?? 0.0,
+            'mealUse' => $customer->getMealTypeAsArray() ?? ['breakfast', 'lunch', 'dinner'],
+            'trainingDaysOfWeek' => $customer->training_days_of_week ?? null,
+
+        ];
+
+        return self::from(array_merge($base, $overrides));
+    }
 
 }

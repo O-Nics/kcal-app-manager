@@ -11,14 +11,17 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property string $name
  * @property string $code
+ * @property string $value
  */
 
 class MealType extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'name',
         'code',
+        'value',
     ];
     protected $table = 'meal_types';
     protected $casts = [

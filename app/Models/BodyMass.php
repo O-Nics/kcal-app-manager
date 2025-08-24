@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\Traits\DocumentTrait;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -16,6 +17,7 @@ use Illuminate\Support\Carbon;
  * * @property Carbon|null $created_at
  * * @property Carbon|null $updated_at
  * * @property-read Customer $customer
+ * * @property-read Collection|Document[] $files
  * */
 
 
@@ -33,5 +35,10 @@ class BodyMass extends Model implements Documentable
     public function storagePath(): string
     {
         return 'customers/' . $this->customer_id . '/weights_images/' . $this->id;
+    }
+
+    public function files() : \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(Document::class, 'documentable');
     }
 }

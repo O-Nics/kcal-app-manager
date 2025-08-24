@@ -32,10 +32,12 @@ return new class extends Migration
             $table->integer('train_kcal')->nullable();
             $table->integer('rest_kcal')->nullable();
             $table->integer('obj_steps')->nullable();
-            $table->integer('obj_loss_weight_hebdo')->nullable();
-            $table->integer('max_loss_weight_hebdo')->nullable();
             $table->integer('time_to_achieve')->nullable();
 
+
+
+            $table->double('obj_loss_weight_hebdo')->nullable();
+            $table->double('max_loss_weight_hebdo')->nullable();
             $table->double('start_weight')->nullable();
             $table->double('wanted_weight')->nullable();
             $table->double('obj_water')->nullable();
@@ -50,6 +52,8 @@ return new class extends Migration
 
             $table->date('birth_date')->nullable();
             $table->date('form_passed_at')->nullable();
+
+            $table->json('training_days_of_week')->nullable();
 
             $table->timestamp('last_login_at')->nullable();
             $table->timestamp('last_paywall_at')->nullable();

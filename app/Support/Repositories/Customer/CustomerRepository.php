@@ -15,6 +15,8 @@ interface CustomerRepository
 
     public function createProgramCustomer(CreateProgramData $createProgramData, ?Customer $customer, User $user) : Customer;
 
+    public function planAndAddToCustomer(CreateProgramData $createProgramData, Customer $customer): Customer;
+
     public function storeCustomer(User $user, RegisterCustomerData $registerCustomerData): Customer;
 
     public function updateNotification(Customer $customer, String $column, bool $value): void;

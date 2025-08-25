@@ -24,10 +24,11 @@ Route::prefix('customers')->group(function () {
         Route::patch('update-start-weight', [CustomerController::class, 'updateStartWeight']);
         Route::patch('update-wanted-weight', [CustomerController::class, 'updateWantedWeight']);
         Route::patch('update-hebdo', [CustomerController::class, 'updateHebdo']);
-        Route::patch('update-calorie', [CustomerController::class, 'updateKcal']);
+        Route::patch('update-kcal', [CustomerController::class, 'updateKcal']);
         Route::patch('update-nutrition', [CustomerController::class, 'updateNutrition']);
         Route::patch('update-steps', [CustomerController::class, 'updateSteps']);
-        Route::patch('update-volume-water', [CustomerController::class, 'updateWater']);
+        Route::patch('update-volume-water-by-each', [CustomerController::class, 'updateVolumeWaterByEach']);
+        Route::patch('update-volume-water', [CustomerController::class, 'updateVolumeWater']);
 
 
     });

@@ -68,7 +68,26 @@ final class ProgramPlanner
             'snack_afternoon' => 0.10,
             'dinner'          => 0.25,
         ],
+        'recomp' => [
+            'breakfast'       => 0.23,
+            'snack_morning'   => 0.10,
+            'lunch'           => 0.34,
+            'snack_afternoon' => 0.10,
+            'dinner'          => 0.23,
+        ],
     ];
+
+    /**
+     * Get the base meal profile for a specific goal.
+     *
+     * @param string $goal
+     * @return array|null
+     */
+    public function getBaseProfile(string $goal): ?array
+    {
+        return self::BASE_PROFILES[$goal] ?? null;
+    }
+
 
     public function build(CreateProgramData $d): ProgramPlan
     {
@@ -106,7 +125,7 @@ final class ProgramPlanner
      * $mealUse peut contenir: breakfast, snack_morning, lunch, snack_afternoon, dinner (doublons permis)
      * L'ordre de $mealUse détermine l'ordre des sorties (meal_1, meal_2, ...)
      */
-    private function distributeByMealUse(int $dailyKcal, array $mealUse, array $baseProfile): array
+    public function distributeByMealUse(int $dailyKcal, array $mealUse, array $baseProfile): array
     {
         // Map codes -> canonical slot names
         $mealMap = [

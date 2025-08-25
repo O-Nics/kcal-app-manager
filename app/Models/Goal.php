@@ -12,13 +12,14 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $name
  * @property string $description
  * @property string $code
+ * @property string $value
  */
 
 class Goal extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'description', 'code'];
+    protected $fillable = ['name', 'description', 'code', 'value'];
 
     protected $casts = [
         'id' => 'integer',

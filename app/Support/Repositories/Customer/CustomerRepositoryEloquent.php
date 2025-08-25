@@ -882,7 +882,7 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
 
     }
 
-    private function planAndAddToCustomer(CreateProgramData $createProgramData, Customer $customer): Customer{
+    public function planAndAddToCustomer(CreateProgramData $createProgramData, Customer $customer): Customer{
         $planner = new ProgramPlanner();
         $program = $planner->build($createProgramData);
 
@@ -891,9 +891,10 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
         if(Goal::query()->find($createProgramData->goalId)){
             $customer->goal()->associate(Goal::query()->find($createProgramData->goalId));
         } else {
-            $customer->goal()->associate(Goal::query()->where('code', '1')->first());
+            $customer->goal()->associate(Goal::query()->where('code', '2')->first());
         }
 
+        dd($createProgramData->activityLevelId);
         if(ActivityLevel::query()->find($createProgramData->activityLevelId)){
             $customer->activityLevel()->associate(ActivityLevel::query()->find($createProgramData->activityLevelId));
         } else {

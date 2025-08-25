@@ -9,9 +9,17 @@ use App\Features\Auth\Services\TokenService;
 use App\Features\Customer\Data\CreateProgramData;
 use App\Features\Customer\Data\PasswordCustomerData;
 use App\Features\Customer\Data\RegisterCustomerData;
+use App\Features\Customer\Data\UpdateActivityData;
 use App\Features\Customer\Data\UpdateGoalData;
+use App\Features\Customer\Data\UpdateHebdoChangeData;
+use App\Features\Customer\Data\UpdateKcalData;
 use App\Features\Customer\Data\UpdateNotificationData;
+use App\Features\Customer\Data\UpdateNutritionData;
+use App\Features\Customer\Data\UpdateStepsData;
+use App\Features\Customer\Data\UpdateTargetOrStartWeightData;
+use App\Features\Customer\Data\UpdateWaterVolumeData;
 use App\Features\Customer\Data\WeightCustomerData;
+use App\Features\Customer\Services\ProgramPlanner;
 use App\Models\Customer;
 use App\Models\User;
 use App\Support\Abstract\Controller;
@@ -26,6 +34,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\PersonalAccessToken;
 use Throwable;
+use function Symfony\Component\String\u;
 
 class CustomerController extends Controller
 {
@@ -188,8 +197,178 @@ class CustomerController extends Controller
         $user = auth()->user();
         $this->ensureCustomer->userCanManageCustomer($user, $customer);
 
+        $customer = $this->customerRepository->updateOneColumn('goal_id', $updateGoalData->goalId, $customer);
+
+        $customer = $this->updateProgramCustomer($customer);
+
+        return response()->json([
+            'success' => true,
+            'customer' => $customer
+        ]);
+
+    }
+
+    public function updateActivity(Customer $customer, UpdateActivityData $updateActivityData): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $this->ensureCustomer->userCanManageCustomer($user, $customer);
+
+        $customer = $this->customerRepository->updateOneColumn('activity_level_id', $updateActivityData->activityId, $customer);
+
+        $customer = $this->updateProgramCustomer($customer);
+
+        return response()->json([
+            'success' => true,
+            'customer' => $customer
+        ]);
+
+    }
+
+    public function updateStartWeight(Customer $customer, UpdateTargetOrStartWeightData $updateStartWeightData): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $this->ensureCustomer->userCanManageCustomer($user, $customer);
+
+        $customer = $this->customerRepository->updateOneColumn('start_weight', $updateStartWeightData->weight, $customer);
+
+        $customer = $this->updateProgramCustomer($customer);
+
+        return response()->json([
+            'success' => true,
+            'customer' => $customer
+        ]);
+
+    }
+
+    public function updateWantedWeight(Customer $customer, UpdateTargetOrStartWeightData $updateStartWeightData): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $this->ensureCustomer->userCanManageCustomer($user, $customer);
+
+        $customer = $this->customerRepository->updateOneColumn('wanted_weight', $updateStartWeightData->weight, $customer);
+
+        $customer = $this->updateProgramCustomer($customer);
+
+        return response()->json([
+            'success' => true,
+            'customer' => $customer
+        ]);
+
+    }
+
+    public function updateHebdo(Customer $customer, UpdateHebdoChangeData $updateHebdoChangeData): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $this->ensureCustomer->userCanManageCustomer($user, $customer);
+
+        $customer = $this->customerRepository->updateOneColumn('obj_loss_weight_hebdo', $updateHebdoChangeData->hebdoChange, $customer);
+
+        $customer = $this->updateProgramCustomer($customer);
+
+        return response()->json([
+            'success' => true,
+            'customer' => $customer
+        ]);
+
+    }
+
+    public function updateKcal(Customer $customer, UpdateKcalData $updateKcalData): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $this->ensureCustomer->userCanManageCustomer($user, $customer);
+
+        $mealTypeArray = $customer->getMealTypeAsArray();
+        $goal = $customer->goal->value;
+
+        $prog = new ProgramPlanner();
+
+        $prog->distributeByMealUse($updateKcalData->kcal, $mealTypeArray,$prog->getBaseProfile($goal));
+
+        $customer = $this->customerRepository->updateOneColumn('obj_kcals', $updateKcalData->kcal, $customer);
 
 
+        return response()->json([
+            'success' => true,
+            'customer' => $customer
+        ]);
+
+    }
+
+     public function updateNutrition(Customer $customer, UpdateNutritionData $nutritionData): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $this->ensureCustomer->userCanManageCustomer($user, $customer);
+
+        $customer = $this->customerRepository->updateOneColumn('obj_proteins', $nutritionData->protein, $customer);
+        $customer = $this->customerRepository->updateOneColumn('obj_lipids', $nutritionData->fat, $customer);
+        $customer = $this->customerRepository->updateOneColumn('obj_glucides', $nutritionData->carbs, $customer);
+
+
+        return response()->json([
+            'success' => true,
+            'customer' => $customer
+        ]);
+
+    }
+
+    public function updateSteps(Customer $customer, UpdateStepsData $updateStepsData): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $this->ensureCustomer->userCanManageCustomer($user, $customer);
+
+        $customer = $this->customerRepository->updateOneColumn('obj_steps', $updateStepsData->steps, $customer);
+
+        return response()->json([
+            'success' => true,
+            'customer' => $customer
+        ]);
+
+    }
+
+    public function updateVolumeWaterByEach(Customer $customer, UpdateWaterVolumeData $updateWaterVolumeData): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $this->ensureCustomer->userCanManageCustomer($user, $customer);
+
+        $customer = $this->customerRepository->updateOneColumn('volume_water_by_each', $updateWaterVolumeData->volume, $customer);
+
+        return response()->json([
+            'success' => true,
+            'customer' => $customer
+        ]);
+
+    }
+
+    public function updateVolumeWater(Customer $customer, UpdateWaterVolumeData $updateWaterVolumeData): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $this->ensureCustomer->userCanManageCustomer($user, $customer);
+
+        $customer = $this->customerRepository->updateOneColumn('obj_water', $updateWaterVolumeData->volume, $customer);
+
+        return response()->json([
+            'success' => true,
+            'customer' => $customer
+        ]);
+
+    }
+
+
+
+    private function updateProgramCustomer(Customer $customer) : Customer
+    {
+        $createProgramData = CreateProgramData::fromCustomer($customer);
+
+        return $this->customerRepository->planAndAddToCustomer($createProgramData, $customer);
     }
 
 

@@ -1075,6 +1075,10 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
 
     public function updateOneColumn(string $column, mixed $value, Customer $customer): Customer
     {
+        if($column === "id" || $column === "user_id" || $column === "is_owner"){
+            abort(400, "Modification de cette colonne impossible.");
+        }
+
         if ($customer->$column != $value) {
             $customer->$column = $value;
             $customer->save();

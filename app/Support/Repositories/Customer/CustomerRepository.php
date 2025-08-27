@@ -14,7 +14,7 @@ use Illuminate\Support\Collection;
 
 interface CustomerRepository
 {
-    public function findById(string $id): ? Customer;
+    public function findById(string $id): ?Customer;
 
     public function createProgramCustomer(CreateProgramData $createProgramData, ?Customer $customer, User $user) : Customer;
 

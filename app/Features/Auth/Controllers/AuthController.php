@@ -10,7 +10,6 @@ use App\Features\Auth\Data\UserLoginData;
 use App\Features\Auth\Data\UserRegisterData;
 use App\Features\Auth\Services\TokenService;
 use App\Features\User\Resources\UserResource;
-use App\Http\Requests\CheckPasswordResetRequest;
 use App\Mail\PasswordResetMail;
 use App\Models\User;
 use App\Support\Abstract\Controller;
@@ -68,7 +67,7 @@ class AuthController extends Controller
             return response()->json([
                 'success' => true,
                 'user' => $user,
-                'customer' =>  $customer ? $customer : null,
+                'customer' =>  $customer,
                 'device' => $session->device,
                 'access_token' => $tokens->accessPlain(),
                 'refresh_token' => $tokens->refreshPlain(),
@@ -126,7 +125,7 @@ class AuthController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => "L'email ou le mot de passe est incorrect.",
-            ], 401);
+            ], 401); 
 
         } catch (Throwable $e) {
             return response()->json([

@@ -6,18 +6,26 @@ use App\Features\Auth\Data\RevokeTokenData;
 use App\Features\Auth\Data\UserLoginData;
 use App\Features\Auth\Data\UserRegisterData;
 use App\Features\Auth\Services\TokenService;
+use App\Features\Customer\Data\AddWaterData;
 use App\Features\Customer\Data\CreateProgramData;
+use App\Features\Customer\Data\DelWaterData;
 use App\Features\Customer\Data\PasswordCustomerData;
 use App\Features\Customer\Data\RegisterCustomerData;
 use App\Features\Customer\Data\UpdateActivityData;
+use App\Features\Customer\Data\UpdateBirthDateData;
+use App\Features\Customer\Data\UpdateGenderData;
 use App\Features\Customer\Data\UpdateGoalData;
 use App\Features\Customer\Data\UpdateHebdoChangeData;
+use App\Features\Customer\Data\UpdateHeightData;
+use App\Features\Customer\Data\UpdateHeightUnitData;
 use App\Features\Customer\Data\UpdateKcalData;
 use App\Features\Customer\Data\UpdateNotificationData;
 use App\Features\Customer\Data\UpdateNutritionData;
 use App\Features\Customer\Data\UpdateStepsData;
 use App\Features\Customer\Data\UpdateTargetOrStartWeightData;
+use App\Features\Customer\Data\UpdateUsernameData;
 use App\Features\Customer\Data\UpdateWaterVolumeData;
+use App\Features\Customer\Data\UpdateWeightUnitData;
 use App\Features\Customer\Data\WeightCustomerData;
 use App\Features\Customer\Services\ProgramPlanner;
 use App\Models\Customer;
@@ -203,6 +211,7 @@ class CustomerController extends Controller
 
         return response()->json([
             'success' => true,
+            'updated_plan' => true,
             'customer' => $customer
         ]);
 
@@ -220,6 +229,7 @@ class CustomerController extends Controller
 
         return response()->json([
             'success' => true,
+            'updated_plan' => true,
             'customer' => $customer
         ]);
 
@@ -237,6 +247,7 @@ class CustomerController extends Controller
 
         return response()->json([
             'success' => true,
+            'updated_plan' => true,
             'customer' => $customer
         ]);
 
@@ -254,6 +265,7 @@ class CustomerController extends Controller
 
         return response()->json([
             'success' => true,
+            'updated_plan' => true,
             'customer' => $customer
         ]);
 
@@ -265,12 +277,13 @@ class CustomerController extends Controller
         $user = auth()->user();
         $this->ensureCustomer->userCanManageCustomer($user, $customer);
 
-        $customer = $this->customerRepository->updateOneColumn('obj_loss_weight_hebdo', $updateHebdoChangeData->hebdoChange, $customer);
+        $customer = $this->customerRepository->updateOneColumn('obj_weight_hebdo_change', $updateHebdoChangeData->hebdoChange, $customer);
 
         $customer = $this->updateProgramCustomer($customer);
 
         return response()->json([
             'success' => true,
+            'updated_plan' => true,
             'customer' => $customer
         ]);
 
@@ -295,6 +308,7 @@ class CustomerController extends Controller
 
         return response()->json([
             'success' => true,
+            'updated_plan' => true,
             'customer' => $customer
         ]);
 
@@ -363,6 +377,108 @@ class CustomerController extends Controller
 
     }
 
+    public function updateUsername(Customer $customer, UpdateUsernameData $usernameData): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $this->ensureCustomer->userCanManageCustomer($user, $customer);
+
+        $customer = $this->customerRepository->updateOneColumn('username', $usernameData->username, $customer);
+
+        return response()->json([
+            'success' => true,
+            'customer' => $customer
+        ]);
+
+    }
+
+    public function updateHeight(Customer $customer, UpdateHeightData $updateHeightData): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $this->ensureCustomer->userCanManageCustomer($user, $customer);
+
+        $customer = $this->customerRepository->updateOneColumn('height', $updateHeightData->height, $customer);
+
+        $customer = $this->updateProgramCustomer($customer);
+
+        return response()->json([
+            'success' => true,
+            'updated_plan' => true,
+            'customer' => $customer
+        ]);
+
+    }
+
+    public function updateBirthDay(Customer $customer, UpdateBirthDateData $updateBirthDateData): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $this->ensureCustomer->userCanManageCustomer($user, $customer);
+
+        $customer = $this->customerRepository->updateOneColumn('birth_date', $updateBirthDateData->birthDate, $customer);
+
+        $customer = $this->updateProgramCustomer($customer);
+
+
+        return response()->json([
+            'success' => true,
+            'updated_plan' => true,
+            'customer' => $customer
+        ]);
+
+    }
+
+    public function updateGender(Customer $customer, UpdateGenderData $updateGenderData): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $this->ensureCustomer->userCanManageCustomer($user, $customer);
+
+        $customer = $this->customerRepository->updateOneColumn('gender', $updateGenderData->gender, $customer);
+
+        $customer = $this->updateProgramCustomer($customer);
+
+
+        return response()->json([
+            'success' => true,
+            'updated_plan' => true,
+            'customer' => $customer
+        ]);
+
+    }
+
+    public function updateWeightUnit(Customer $customer, UpdateWeightUnitData $updateWeightUnitData): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $this->ensureCustomer->userCanManageCustomer($user, $customer);
+
+        $customer = $this->customerRepository->updateOneColumn('weight_unit', $updateWeightUnitData->weightUnit, $customer);
+
+
+        return response()->json([
+            'success' => true,
+            'customer' => $customer
+        ]);
+
+    }
+
+    public function updateHeightUnit(Customer $customer, UpdateHeightUnitData $updateHeightUnitData): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $this->ensureCustomer->userCanManageCustomer($user, $customer);
+
+        $customer = $this->customerRepository->updateOneColumn('height_unit', $updateHeightUnitData->heightUnit, $customer);
+
+        return response()->json([
+            'success' => true,
+            'customer' => $customer
+        ]);
+
+    }
+
 
 
     private function updateProgramCustomer(Customer $customer) : Customer
@@ -370,6 +486,32 @@ class CustomerController extends Controller
         $createProgramData = CreateProgramData::fromCustomer($customer);
 
         return $this->customerRepository->planAndAddToCustomer($createProgramData, $customer);
+    }
+
+    public function addWater(Customer $customer, AddWaterData $addWaterData):JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $this->ensureCustomer->userCanManageCustomer($user, $customer);
+        $waters = $this->customerRepository->addWaterToCustomer($customer, $addWaterData);
+        return response()->json([
+            'success' => true,
+            'waters' => WaterResource::collection($waters)
+        ]);
+
+    }
+
+    public function delWater(Customer $customer, DelWaterData $delWaterData):JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+
+        $this->ensureCustomer->userCanManageCustomer($user, $customer);
+        $this->customerRepository->delWaterToCustomer($customer, $delWaterData);
+        return response()->json([
+            'success' => true,
+        ]);
+
     }
 
 

@@ -2,7 +2,9 @@
 
 namespace App\Support\Repositories\Customer;
 
+use App\Features\Customer\Data\AddWaterData;
 use App\Features\Customer\Data\CreateProgramData;
+use App\Features\Customer\Data\DelWaterData;
 use App\Features\Customer\Data\PasswordCustomerData;
 use App\Features\Customer\Data\RegisterCustomerData;
 use App\Features\Customer\Data\WeightCustomerData;
@@ -13,10 +15,13 @@ use App\Models\Customer;
 use App\Models\Goal;
 use App\Models\MealType;
 use App\Models\User;
+use App\Models\Water;
+use App\Models\WaterCustomer;
 use App\Support\Repositories\BaseRepository;
 use App\Support\Repositories\Document\DocumentRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Throwable;
 
@@ -867,15 +872,16 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
         if($customer->is_owner){
             $user->update([
                 'name' => $createProgramData->username,
+                'username' => $createProgramData->username,
+                'weight_unit' => $createProgramData->weightUnit,
+                'height_unit' => $createProgramData->heightUnit,
             ]);
         }
-
-        $customer->username = $createProgramData->username;
-
 
         $customer->weights()->create([
             'weight' => $createProgramData->startWeight,
         ]);
+
 
 
         return $this->planAndAddToCustomer($createProgramData, $customer);
@@ -908,8 +914,8 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
         $customer->obj_kcals = $program->daily_kcal;
         $customer->training_days_of_week = $program->training_days ?? null;
         $customer->obj_steps = $program->daily_steps_goal;
-        $customer->obj_loss_weight_hebdo = $program->meta->weekly_kg ??  null;
-        $customer->max_loss_weight_hebdo = $program->meta->max_weekly_kg ?? null;
+        $customer->obj_weight_hebdo_change = $program->meta->weekly_kg ??  null;
+        $customer->max_weight_hebdo_change = $program->meta->max_weekly_kg ?? null;
         $customer->time_to_achieve = (int)  $program->duration_days ?? 0;
         $customer->obj_proteins =   $program->macro_ratios->protein;
         $customer->obj_lipids =  $program->macro_ratios->fat;
@@ -1078,5 +1084,23 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
     }
 
 
+    public function addWaterToCustomer(Customer $customer, AddWaterData $addWaterData): Collection
+    {
+        /** @var Water $water */
+        $waters = collect();
+        for ($i = 0; $i < $addWaterData->nbToFill; $i++) {
+            $water = $customer->waterCustomers()->create([
+                'volume' => $addWaterData->volume,
+                'added_at' => $addWaterData->addedAt,
+            ]);
+            $waters->push($water);
+        }
 
+        return $waters;
+    }
+
+    public function delWaterToCustomer(Customer $customer, DelWaterData $delWaterData)
+    {
+        $customer->waterCustomers()->whereIn('id', $delWaterData->waterIds)->delete();
+    }
 }

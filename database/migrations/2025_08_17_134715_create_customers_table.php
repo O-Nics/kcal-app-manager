@@ -26,7 +26,9 @@ return new class extends Migration
             $table->string('profile_password')->nullable();
             $table->string('activity')->nullable();
             $table->string('height')->nullable();
-            $table->string('type_water')->nullable();// percent
+            $table->string('type_water')->nullable();
+            $table->string('height_unit')->nullable();
+            $table->string('weight_unit')->nullable();
 
             $table->integer('obj_kcals')->nullable();
             $table->integer('train_kcal')->nullable();
@@ -36,8 +38,8 @@ return new class extends Migration
 
 
 
-            $table->double('obj_loss_weight_hebdo')->nullable();
-            $table->double('max_loss_weight_hebdo')->nullable();
+            $table->double('max_weight_hebdo_change')->nullable();
+            $table->double('obj_weight_hebdo_change')->nullable();
             $table->double('start_weight')->nullable();
             $table->double('wanted_weight')->nullable();
             $table->double('obj_water')->nullable();

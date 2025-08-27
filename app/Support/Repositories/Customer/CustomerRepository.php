@@ -2,12 +2,15 @@
 
 namespace App\Support\Repositories\Customer;
 
+use App\Features\Customer\Data\AddWaterData;
 use App\Features\Customer\Data\CreateProgramData;
+use App\Features\Customer\Data\DelWaterData;
 use App\Features\Customer\Data\PasswordCustomerData;
 use App\Features\Customer\Data\RegisterCustomerData;
 use App\Features\Customer\Data\WeightCustomerData;
 use App\Models\Customer;
 use App\Models\User;
+use Illuminate\Support\Collection;
 
 interface CustomerRepository
 {
@@ -31,6 +34,9 @@ interface CustomerRepository
 
     public function updateKcalPerMeal(Customer $customer, array $kcalPerMeal): Customer;
 
+    public function addWaterToCustomer(Customer $customer, AddWaterData $addWaterData): Collection;
+
+    public function delWaterToCustomer(Customer $customer, DelWaterData $delWaterData);
 
 
 }

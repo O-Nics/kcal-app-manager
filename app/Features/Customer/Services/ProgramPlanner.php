@@ -291,7 +291,7 @@ final class ProgramPlanner
     private function dailyDeficitFromHebdoLoss(CreateProgramData $d, float $tdee, bool $isRecomp = false): array
     {
         // 1) Cible demandée (hebdoLoss) et cap par % du poids/sem (1.0%)
-        $requestedWeeklyKg = ($d->hebdoLoss ?? 0) > 0 ? (float) $d->hebdoLoss : 0.5;
+        $requestedWeeklyKg = ($d->hebdoChange ?? 0) > 0 ? (float) $d->hebdoChange : 0.5;
         $weeklyKgCapByWeight = $d->startWeight > 0 ? round($d->startWeight * 0.010, 3) : $requestedWeeklyKg;
         $weeklyKgByWeight    = min($requestedWeeklyKg, $weeklyKgCapByWeight);
 
@@ -410,7 +410,7 @@ final class ProgramPlanner
      */
     private function dailySurplusFromHebdoGain(CreateProgramData $d, float $tdee, bool $isRecomp = false): array
     {
-        $weeklyKgTarget = ($d->hebdoLoss ?? 0) > 0 ? (float) $d->hebdoLoss : 0.25;
+        $weeklyKgTarget = ($d->hebdoChange ?? 0) > 0 ? (float) $d->hebdoChange : 0.25;
 
         // Cap hebdo par % poids/sem (lean bulk ~0.6%)
         $weeklyKgCap = $d->startWeight > 0 ? round($d->startWeight * 0.006, 3) : $weeklyKgTarget;
@@ -959,7 +959,7 @@ final class ProgramPlanner
                 'weekly_pct' => $sur['weekly_pct'] ?? null,
                 'cap_pct'    => $sur['cap_pct'] ?? null,
                 'capped_by'  => $sur['capped_by'] ?? null,
-                'requested_weekly_kg' => isset($d->hebdoLoss) ? (float) $d->hebdoLoss : null,
+                'requested_weekly_kg' => isset($d->hebdoChange) ? (float) $d->hebdoChange : null,
             ],
         );
     }
@@ -1215,7 +1215,7 @@ final class ProgramPlanner
                 'weekly_pct' => $weeklyPct,
                 'cap_pct'    => $defOrSur['cap_pct'] ?? null,
                 'capped_by'  => $defOrSur['capped_by'] ?? null,
-                'requested_weekly_kg' => (!empty($d->hebdoLoss) && $d->hebdoLoss > 0) ? (float) $d->hebdoLoss : null,
+                'requested_weekly_kg' => (!empty($d->hebdoChange) && $d->hebdoChange > 0) ? (float) $d->hebdoChange : null,
             ],
             training_days: $d->trainingDaysOfWeek ?? [],
         );

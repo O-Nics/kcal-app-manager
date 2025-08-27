@@ -56,11 +56,17 @@ class CreateProgramData extends Data
     //very_active Très actif / entraînement quasi quotidien sportifs réguliers 1.85 code 8
 
     #[Required]
-    #[WithCast(DateTimeInterfaceCast::class, format: 'Y-m-d')]
+    #[WithCast(DateTimeInterfaceCast::class, format: 'd-m-Y')]
     public ?Carbon $birthDate = null;
 
     #[Required]
-    public float $hebdoLoss; // Weekly weight loss goal in kg
+    public float $hebdoChange; // Weekly weight loss goal in kg
+
+    #[Required]
+    public string $heightUnit = 'cm'; // 'cm' or 'in'
+
+    #[Required]
+    public string $weightUnit = 'kg'; // 'kg' or 'lb'
 
     #[Required]
     public array $mealUse;
@@ -99,7 +105,7 @@ class CreateProgramData extends Data
             'birthDate' => $customer->birth_date
                 ? (\is_string($customer->birth_date) ? Carbon::parse($customer->birth_date) : $customer->birth_date)
                 : null,
-            'hebdoLoss' => $customer->obj_loss_weight_hebdo ?? 0.0,
+            'hebdoChange' => $customer->obj_weight_hebdo_change ?? 0.0,
             'mealUse' => $customer->getMealTypeAsArray() ?? ['breakfast', 'lunch', 'dinner'],
             'trainingDaysOfWeek' => $customer->training_days_of_week ?? null,
 

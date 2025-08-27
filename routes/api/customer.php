@@ -30,6 +30,16 @@ Route::prefix('customers')->group(function () {
         Route::patch('update-steps', [CustomerController::class, 'updateSteps']);
         Route::patch('update-volume-water-by-each', [CustomerController::class, 'updateVolumeWaterByEach']);
         Route::patch('update-volume-water', [CustomerController::class, 'updateVolumeWater']);
+        Route::patch('update-volume-water', [CustomerController::class, 'updateVolumeWater']);
+        Route::patch('update-username', [CustomerController::class, 'updateUsername']);
+        Route::patch('update-height', [CustomerController::class, 'updateHeight']);
+        Route::patch('update-birth-day', [CustomerController::class, 'updateBirthDay']);
+        Route::patch('update-gender', [CustomerController::class, 'updateGender']);
+        Route::patch('update-weight-unit', [CustomerController::class, 'updateWeightUnit']);
+        Route::patch('update-height-unit', [CustomerController::class, 'updateHeightUnit']);
+        Route::post('add-water', [CustomerController::class, 'addWater']);
+        Route::post('del-water', [CustomerController::class, 'delWater']);
+
 
 
     });

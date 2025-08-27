@@ -287,10 +287,11 @@ class CustomerController extends Controller
 
         $prog = new ProgramPlanner();
 
-        $prog->distributeByMealUse($updateKcalData->kcal, $mealTypeArray,$prog->getBaseProfile($goal));
+        $kcalPerMeal = $prog->distributeByMealUse($updateKcalData->kcal, $mealTypeArray,$prog->getBaseProfile($goal));
+
+        $customer = $this->customerRepository->updateKcalPerMeal($customer, $kcalPerMeal);
 
         $customer = $this->customerRepository->updateOneColumn('obj_kcals', $updateKcalData->kcal, $customer);
-
 
         return response()->json([
             'success' => true,

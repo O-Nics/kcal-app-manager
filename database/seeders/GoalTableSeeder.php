@@ -53,14 +53,14 @@ class GoalTableSeeder extends Seeder
         $countCreated = 0;
 
         foreach ($goals as $goal) {
-            dump("Processing meal type: {$goal['name']}");
+            dump("Processing Goal: {$goal['name']}");
 
             $existingGoals = DB::table('goals')
                 ->where('code', $goal['code'])
                 ->first();
 
             if ($existingGoals) {
-                dump("Meal type '{$goal['name']}' with code {$goal['code']} already exists.");
+                dump("Goal '{$goal['name']}' with code {$goal['code']} already exists.");
                 continue;
             }
 
@@ -76,12 +76,12 @@ class GoalTableSeeder extends Seeder
                 ]);
 
                 $countCreated++;
-                dump("Meal type '{$goal['name']}' successfully created.");
+                dump("Goal '{$goal['name']}' successfully created.");
             } catch (\Throwable $e) {
-                dump("Error creating meal type '{$goal['name']}': {$e->getMessage()}");
+                dump("Error creating Goal '{$goal['name']}': {$e->getMessage()}");
             }
         }
 
-        dump("{$countCreated} meal types successfully created.");
+        dump("{$countCreated} Goals successfully created.");
     }
 }

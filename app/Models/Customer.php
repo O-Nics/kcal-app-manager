@@ -130,6 +130,7 @@ class Customer extends Model implements Documentable
         'rated_app_at' => 'datetime',
         'birth_date' => 'date',
         'form_passed_at' => 'date',
+        'training_days_of_week' => 'array',
     ];
 
     public function user(): BelongsTo {

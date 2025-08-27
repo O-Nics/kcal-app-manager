@@ -188,6 +188,7 @@ final class ProgramPlanner
             }
         }
 
+
         // Conversion en kcal, clés = noms de slots (breakfast, lunch, ...)
         return array_map(function ($ratio) use ($dailyKcal) {
             return (int)round($dailyKcal * $ratio);

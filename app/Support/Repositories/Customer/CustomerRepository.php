@@ -29,5 +29,8 @@ interface CustomerRepository
 
     public function updateOneColumn(string $column, mixed $value, Customer $customer): Customer;
 
+    public function updateKcalPerMeal(Customer $customer, array $kcalPerMeal): Customer;
+
+
 
 }

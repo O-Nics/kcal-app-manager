@@ -19,8 +19,7 @@ use Spatie\LaravelData\Data;
 class UpdateActivityData extends Data
 {
 
-    #[Required]
+    #[Required, Exists('activities', 'id')]
     public int $activityId;
-
 
 }

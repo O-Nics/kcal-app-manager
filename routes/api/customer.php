@@ -19,7 +19,8 @@ Route::prefix('customers')->group(function () {
         Route::post('handle-password', [CustomerController::class, 'password']);
         Route::get('check-password', [CustomerController::class, 'checkPassword']);
         Route::post('weight', [CustomerController::class, 'addWeight']);
-        Route::patch('update-objective', [CustomerController::class, 'updateGoal']);
+
+        Route::patch('update-goal', [CustomerController::class, 'updateGoal']);
         Route::patch('update-activity', [CustomerController::class, 'updateActivity']);
         Route::patch('update-start-weight', [CustomerController::class, 'updateStartWeight']);
         Route::patch('update-wanted-weight', [CustomerController::class, 'updateWantedWeight']);

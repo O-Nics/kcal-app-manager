@@ -18,8 +18,8 @@ return new class extends Migration
             $table->string('device_id');
             $table->string('platform');
             $table->string('device_ip')->nullable(); // Adresse IP de l'appareil
-            $table->string('access_token_id'); // ID du token d'accès généré par Sanctum
-            $table->string('refresh_token_id')->nullable();
+            $table->string('access_token_id');
+            $table->string('refresh_token_id');
             $table->string('model')->nullable();
             $table->timestamps();
         });

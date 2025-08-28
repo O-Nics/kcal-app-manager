@@ -25,6 +25,18 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  */
 class Document extends Model
 {
+
+    protected $fillable = [
+        'file_name',
+        'disk',
+        'width',
+        'height',
+        'number',
+        'thumbs',
+        'collection',
+        'private',
+        'name',
+    ];
     public function documentable(): MorphTo {
         return $this->morphTo();
     }

@@ -10,6 +10,8 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Imagick;
+use ImagickException;
 use Intervention\Image\Drivers\Imagick\Driver;
 use Intervention\Image\Image;
 use Intervention\Image\ImageManager;
@@ -20,14 +22,8 @@ class DocumentRepositoryEloquent extends BaseRepository implements DocumentRepos
 {
     protected string $model = Document::class;
 
-//    /**
-//     * @param UploadedFile[] $files
-//     * @param Documentable $documentable
-//     * @return Collection
-//     * @throws Throwable
-//     */
     /**
-     * @throws \ImagickException
+     * @throws ImagickException
      * @throws Throwable
      */
     public function store(DataCollection $files, Documentable $documentable, ?string $collection = null, ?string $private = null): Collection
@@ -60,8 +56,22 @@ class DocumentRepositoryEloquent extends BaseRepository implements DocumentRepos
                    $fileName = Carbon::now()->timestamp . '_' . Str::random() . '.' . $extension;
                    $relative = "$relativeDir/$fileName";
 
-                   // Encoder l'image selon l'extension puis écrire via Storage
-                   $encoded = match ($extension) {
+                   // Encoder l'image selon l'extension (avec fallback si non supporté par Imagick)
+                   $targetExt = $extension;
+                   $needsImagickSupport = in_array($extension, ['heic', 'avif', 'tiff', 'webp'], true);
+                   $formatSupported = true;
+
+                   if ($needsImagickSupport) {
+                       $formatSupported = class_exists(Imagick::class)
+                           && new Imagick()->queryFormats(strtoupper($extension)) !== [];
+                   }
+
+                   if (! $formatSupported) {
+                       // Fallback en JPEG si le format cible n'est pas supporté sur l'environnement courant
+                       $targetExt = 'jpg';
+                   }
+
+                   $encoded = match ($targetExt) {
                        'png'  => $image->toPng(),
                        'webp' => $image->toWebp(70),
                        'heic' => $image->toHeic(70),
@@ -69,6 +79,13 @@ class DocumentRepositoryEloquent extends BaseRepository implements DocumentRepos
                        'avif' => $image->toAvif(70),
                        default => $image->toJpeg(70),
                    };
+
+                   if ($targetExt !== $extension) {
+                       // Harmoniser le nom de fichier avec le format réellement encodé
+                       $base = pathinfo($fileName, PATHINFO_FILENAME);
+                       $fileName = $base . '.jpg';
+                       $relative = "$relativeDir/$fileName";
+                   }
 
                    Storage::disk($disk)->put($relative, (string) $encoded);
 
@@ -78,30 +95,33 @@ class DocumentRepositoryEloquent extends BaseRepository implements DocumentRepos
                    $height = $image->height();
                } elseif ($extension === 'dng') {
 
-                   // Pour les fichiers .dng, utiliser Imagick directement
-                   $imagick = new \Imagick();
+                   try {
+                       $imagick = new \Imagick();
+                       $imagick->readImage($file->getRealPath());   // peut échouer si pas de délégué OU faux DNG
+                       $imagick->setIteratorIndex(0);               // sécurité multi-frame
+                       $imagick->resizeImage(1000, 1000, \Imagick::FILTER_LANCZOS, 1, true);
+                       $imagick->setImageFormat('jpeg');
 
-                   $imagick->readImage($file->getRealPath());
+                       $fileName = Carbon::now()->timestamp . "_" . Str::random() . ".jpg";
+                       $relative = "$relativeDir/$fileName";
+                       Storage::disk($disk)->put($relative, $imagick->getImageBlob());
 
-                   $imagick->resizeImage(1000, 1000, \Imagick::FILTER_LANCZOS, 1, true);
+                       $path = $disk === 'public' ? "public/{$relative}" : "app/{$relative}";
+                       $width = $imagick->getImageWidth();
+                       $height = $imagick->getImageHeight();
+                       $imagick->clear();
 
-                   $imagick->setImageFormat('jpeg');
-
-                   $fileName = Carbon::now()->timestamp . "_" . Str::random() . ".jpg";
-                   $relative = "$relativeDir/$fileName";
-                   Storage::disk($disk)->put($relative, $imagick->getImageBlob());
-
-                   $path = $disk === 'public' ? "public/{$relative}" : "app/{$relative}";
-
-                   $width = $imagick->getImageWidth();
-                   $height = $imagick->getImageHeight();
-
-                   $imagick->clear();
+                   } catch (\ImagickException $e) {
+                       // Fallback: on stocke tel quel le DNG (pas de preview, pas de dimensions)
+                       $fileName = Carbon::now()->timestamp . "_" . Str::random() . ".dng";
+                       $stored = Storage::disk($disk)->putFileAs($relativeDir, $file, $fileName);
+                       $path = $stored;
+                   }
 
                } else {
                    $fileName = Carbon::now()->timestamp . '_' . Str::random() . '.' . $extension;
                    $stored = Storage::disk($disk)->putFileAs($relativeDir, $file, $fileName);
-                   $path = $disk === 'public' ? $stored : $stored;
+                   $path = $stored;
                }
 
                $documentPath = basename($path);

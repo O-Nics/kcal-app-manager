@@ -12,30 +12,18 @@ use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
 
-function makeDeviceData(
-    string $id = 'dev-123',
-    string $platform = 'ios',
-    string $ip = '1.2.3.4',
-    ?string $model = 'iPhone 14'
-): DeviceData {
-    return DeviceData::from([
-        'deviceId'        => $id,
-        'devicePlatform'  => $platform,
-        'deviceIp'        => $ip,
-        'deviceModel'     => $model,
-    ]);
-}
 
-it('creates a new device and a session when none exists', function () {
+
+test('creates a new device and a session when none exists', function () {
     $user = User::factory()->create();
     $device = makeDeviceData();
 
     $tokens = app(TokenService::class)->issueFor($user, ['access'], ['refresh']);
 
     /** @var SessionRepository $repo */
-    $repo = app(SessionRepository::class);
 
-    $session = $repo->createSession($user, $device, $tokens);
+
+    $session = sessionRepo()->createSession($user, $device, $tokens);
 
     expect($session)->toBeInstanceOf(Session::class)
         ->and($session->user_id)->toBe($user->id)
@@ -52,7 +40,7 @@ it('creates a new device and a session when none exists', function () {
         ->and($createdDevice->refresh_token_id)->toBe($tokens->refreshId());
 });
 
-it('updates an existing device and still creates a new session', function () {
+test('updates an existing device and still creates a new session', function () {
     $user = User::factory()->create();
 
     $seedTokens = app(TokenService::class)->issueFor($user, ['seed-a'], ['seed-r']);
@@ -73,8 +61,7 @@ it('updates an existing device and still creates a new session', function () {
 
     $tokens = app(TokenService::class)->issueFor($user, ['a1'], ['r1']);
 
-    $repo = app(SessionRepository::class);
-    $session = $repo->createSession($user, $device, $tokens);
+    $session = sessionRepo()->createSession($user, $device, $tokens);
 
     $existing->refresh();
 
@@ -85,18 +72,17 @@ it('updates an existing device and still creates a new session', function () {
         ->and($existing->refresh_token_id)->toEqual($tokens->refreshId());
 });
 
-it('does not duplicate device across successive calls with same keys, but creates multiple sessions', function () {
+test('does not duplicate device across successive calls with same keys, but creates multiple sessions', function () {
     $user = User::factory()->create();
     $device = makeDeviceData('dev-dup', 'android', '8.8.8.8', 'Pixel 8');
 
     $svc = app(TokenService::class);
-    $repo = app(SessionRepository::class);
 
     $t1 = $svc->issueFor($user, ['a'], ['r']);
-    $s1 = $repo->createSession($user, $device, $t1);
+    $s1 = sessionRepo()->createSession($user, $device, $t1);
 
     $t2 = $svc->issueFor($user, ['a2'], ['r2']);
-    $s2 = $repo->createSession($user, $device, $t2);
+    $s2 = sessionRepo()->createSession($user, $device, $t2);
 
     // Un seul device pour ce triplet, mais deux sessions
     expect(Device::where('user_id', $user->id)->where('device_id', 'dev-dup')->where('platform', 'android')->count())
@@ -106,31 +92,29 @@ it('does not duplicate device across successive calls with same keys, but create
 
 });
 
-it('creates separate device rows when same device_id/platform is used by different users', function () {
+test('creates separate device rows when same device_id/platform is used by different users', function () {
     $u1 = User::factory()->create();
     $u2 = User::factory()->create();
 
     $device = makeDeviceData('shared-1', 'ios', '2.2.2.2', 'iPhone 15');
 
     $svc  = app(TokenService::class);
-    $repo = app(SessionRepository::class);
 
-    $repo->createSession($u1, $device, $svc->issueFor($u1, ['a'], ['r']));
-    $repo->createSession($u2, $device, $svc->issueFor($u2, ['a'], ['r']));
+    sessionRepo()->createSession($u1, $device, $svc->issueFor($u1, ['a'], ['r']));
+    sessionRepo()->createSession($u2, $device, $svc->issueFor($u2, ['a'], ['r']));
 
     // Deux devices (un par user), même device_id+platform mais user_id différent
     expect(Device::where('device_id','shared-1')->where('platform','ios')->count())->toBe(2);
 });
 
-it('updates ip and token ids on subsequent calls', function () {
+test('updates ip and token ids on subsequent calls', function () {
     $user = User::factory()->create();
-    $repo = app(SessionRepository::class);
 
     $svc = app(TokenService::class);
 
-    $s1 = $repo->createSession($user, makeDeviceData('dev-x','ios','1.1.1.1','iPhone'), $svc->issueFor($user, ['A1'], ['R1']));
+    $s1 = sessionRepo()->createSession($user, makeDeviceData('dev-x','ios','1.1.1.1','iPhone'), $svc->issueFor($user, ['A1'], ['R1']));
 
-    $s2 = $repo->createSession($user, makeDeviceData('dev-x','ios','5.5.5.5','iPhone'), $svc->issueFor($user, ['A2'], ['R2']));
+    $s2 = sessionRepo()->createSession($user, makeDeviceData('dev-x','ios','5.5.5.5','iPhone'), $svc->issueFor($user, ['A2'], ['R2']));
 
     $device = $s2->device;
 
@@ -141,41 +125,38 @@ it('updates ip and token ids on subsequent calls', function () {
 });
 
 
-it('creates device even if model is null', function () {
+test('creates device even if model is null', function () {
     $user = User::factory()->create();
     $device = makeDeviceData('dev-null-model', 'ios', '7.7.7.7', null);
 
     $tokens = app(TokenService::class)->issueFor($user, ['a'], ['r']);
-    $repo = app(SessionRepository::class);
 
-    $session = $repo->createSession($user, $device, $tokens);
+    $session = sessionRepo()->createSession($user, $device, $tokens);
 
     expect($session->device->model)->toBeNull();
 });
 
 
-it('creates a new session record each time even for same device', function () {
+test('creates a new session record each time even for same device', function () {
     $user = User::factory()->create();
-    $repo = app(SessionRepository::class);
     $svc  = app(TokenService::class);
 
-    $s1 = $repo->createSession($user, makeDeviceData('d1','ios','1.1.1.1','iPhone'), $svc->issueFor($user, ['A'], ['R']));
-    $s2 = $repo->createSession($user, makeDeviceData('d1','ios','1.1.1.1','iPhone'), $svc->issueFor($user, ['B'], ['R']));
+    $s1 = sessionRepo()->createSession($user, makeDeviceData('d1','ios','1.1.1.1','iPhone'), $svc->issueFor($user, ['A'], ['R']));
+    $s2 = sessionRepo()->createSession($user, makeDeviceData('d1','ios','1.1.1.1','iPhone'), $svc->issueFor($user, ['B'], ['R']));
 
     expect($s2->id)->not->toBe($s1->id)
         ->and(Session::where('device_id',$s1->device_id)->count())->toBe(2);
 });
 
-it('refreshes tokens on update of existing device', function () {
+test('refreshes tokens on update of existing device', function () {
     $user = User::factory()->create();
-    $repo = app(SessionRepository::class);
     $svc  = app(TokenService::class);
 
     $firstTokens = $svc->issueFor($user, ['first'], ['rf1']);
-    $repo->createSession($user, makeDeviceData('dev-refresh','ios','3.3.3.3','iPhone'), $firstTokens);
+    sessionRepo()->createSession($user, makeDeviceData('dev-refresh','ios','3.3.3.3','iPhone'), $firstTokens);
 
     $newTokens = $svc->issueFor($user, ['second'], ['rf2']);
-    $repo->createSession($user, makeDeviceData('dev-refresh','ios','3.3.3.3','iPhone'), $newTokens);
+    sessionRepo()->createSession($user, makeDeviceData('dev-refresh','ios','3.3.3.3','iPhone'), $newTokens);
 
     $device = Device::where('device_id','dev-refresh')->first();
 
@@ -184,48 +165,44 @@ it('refreshes tokens on update of existing device', function () {
 });
 
 
-it('allows one user to register multiple distinct devices', function () {
+test('allows one user to register multiple distinct devices', function () {
     $user = User::factory()->create();
-    $repo = app(SessionRepository::class);
     $svc  = app(TokenService::class);
 
-    $repo->createSession($user, makeDeviceData('d1','ios','1.1.1.1','iPhone'), $svc->issueFor($user, ['A'], ['R']));
-    $repo->createSession($user, makeDeviceData('d2','android','2.2.2.2','Pixel'), $svc->issueFor($user, ['B'], ['R']));
+    sessionRepo()->createSession($user, makeDeviceData('d1','ios','1.1.1.1','iPhone'), $svc->issueFor($user, ['A'], ['R']));
+    sessionRepo()->createSession($user, makeDeviceData('d2','android','2.2.2.2','Pixel'), $svc->issueFor($user, ['B'], ['R']));
 
     expect(Device::where('user_id',$user->id)->count())->toBe(2);
 });
 
 
-it('links created session both to the user and the device', function () {
+test('links created session both to the user and the device', function () {
     $user = User::factory()->create();
-    $repo = app(SessionRepository::class);
     $svc  = app(TokenService::class);
 
-    $session = $repo->createSession($user, makeDeviceData('link1','ios','9.9.9.9','iPhone'), $svc->issueFor($user, ['AA'], ['RR']));
+    $session = sessionRepo()->createSession($user, makeDeviceData('link1','ios','9.9.9.9','iPhone'), $svc->issueFor($user, ['AA'], ['RR']));
 
     expect($session->user_id)->toBe($user->id)
         ->and($session->device->device_id)->toBe('link1');
 });
 
-it('updates device_ip if same device logs in from different IP', function () {
+test('updates device_ip if same device logs in from different IP', function () {
     $user = User::factory()->create();
-    $repo = app(SessionRepository::class);
     $svc  = app(TokenService::class);
 
-    $repo->createSession($user, makeDeviceData('ip-change','ios','10.0.0.1','iPhone'), $svc->issueFor($user, ['X'], ['Y']));
-    $repo->createSession($user, makeDeviceData('ip-change','ios','192.168.1.1','iPhone'), $svc->issueFor($user, ['Z'], ['W']));
+    sessionRepo()->createSession($user, makeDeviceData('ip-change','ios','10.0.0.1','iPhone'), $svc->issueFor($user, ['X'], ['Y']));
+    sessionRepo()->createSession($user, makeDeviceData('ip-change','ios','192.168.1.1','iPhone'), $svc->issueFor($user, ['Z'], ['W']));
 
     $device = Device::where('device_id','ip-change')->first();
     expect($device->device_ip)->toBe('192.168.1.1');
 });
 
 
-it('keeps devices and sessions after user deletion unless cascade is set', function () {
+test('keeps devices and sessions after user deletion unless cascade is set', function () {
     $user = User::factory()->create();
-    $repo = app(SessionRepository::class);
     $svc  = app(TokenService::class);
 
-    $session = $repo->createSession($user, makeDeviceData('keepme','ios','1.1.1.1','iPhone'), $svc->issueFor($user, ['A'], ['R']));
+    $session = sessionRepo()->createSession($user, makeDeviceData('keepme','ios','1.1.1.1','iPhone'), $svc->issueFor($user, ['A'], ['R']));
 
     $userId = $user->id;
     $user->delete();

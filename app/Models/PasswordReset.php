@@ -27,6 +27,12 @@ class PasswordReset extends Model
         'created_at' => 'datetime'
     ];
 
+    protected $fillable = [
+        'email',
+        'token',
+        'created_at'
+    ];
+
     public const int EXPIRATION_TIME = 60;
 
     public function getUrl():string {

@@ -79,7 +79,7 @@ test('changeEmail is a no-op for timestamps when setting the same email', functi
 });
 
 
-test('changeEmail stores exact casing and plus-tags (no normalization)', function () {
+test('changeEmail stores with normalization', function () {
     $user = User::query()->create([
         'email' => 'base@example.test',
         'password' => Hash::make('x'),
@@ -87,11 +87,11 @@ test('changeEmail stores exact casing and plus-tags (no normalization)', functio
         'plan' => 'free',
     ]);
 
-    $mail = 'MiXeD+tag@Example.TEST';
+    $mail = 'MiXeD+tag@Example.TEST ';
     $updated = userRepo()->changeEmail($user, makeUpdateEmailData(email: $mail));
 
-    expect($updated->email)->toBe($mail)
-        ->and(User::find($user->id)->email)->toBe($mail);
+    expect($updated->email)->toBe(strtolower(trim($mail)))
+        ->and(User::find($user->id)->email)->toBe(strtolower(trim($mail)));
 });
 
 

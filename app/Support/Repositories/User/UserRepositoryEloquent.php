@@ -27,7 +27,7 @@ class UserRepositoryEloquent extends BaseRepository implements UserRepository
     public function store(UserRegisterData $userRegisterData): User
     {
         $user = new User();
-        $user->email = $userRegisterData->email;
+        $user->email = strtolower(trim($userRegisterData->email));
         $user->password = Hash::make($userRegisterData->password);
         $user->accept_terms = $userRegisterData->acceptTerms;
         $user->plan = "free";
@@ -389,7 +389,7 @@ class UserRepositoryEloquent extends BaseRepository implements UserRepository
     public function findByEmail(string $email): ?User
     {
         return $this->query()
-            ->where('email', $email)
+            ->where('email', strtolower(trim($email)))
             ->first();
     }
 
@@ -398,7 +398,7 @@ class UserRepositoryEloquent extends BaseRepository implements UserRepository
      */
     public function changeEmail(User $user, UpdateMailData $updateMailData): User
     {
-        $user->setAttribute('email', $updateMailData->email);
+        $user->setAttribute('email', strtolower(trim($updateMailData->email)));
         $user->saveOrFail();
         return $user;
     }

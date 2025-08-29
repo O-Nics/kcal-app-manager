@@ -134,9 +134,10 @@ test('store persists user and can be fetched back from DB with relations', funct
 
 
 test('store keeps exact email casing and plus-tags; password is hashed', function () {
+    $mail = ' MiXeD+tag@Example.TEST';
     $data = makeUserRegisterData(
-        email: 'MiXeD+tag@Example.TEST',
-        password: 'case-pass',
+        email: $mail,
+        password: 'case-no-pass',
         acceptTerms: true,
         acceptMarketing: true,
         device: makeDeviceData(
@@ -149,7 +150,7 @@ test('store keeps exact email casing and plus-tags; password is hashed', functio
 
     $user = userRepo()->store($data);
 
-    expect($user->email)->toBe('MiXeD+tag@Example.TEST')
-        ->and(Hash::check('case-pass', $user->password))->toBeTrue();
+    expect($user->email)->toBe(strtolower(trim($mail)))
+        ->and(Hash::check('case-no-pass', $user->password))->toBeTrue();
 });
 

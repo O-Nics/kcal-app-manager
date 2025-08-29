@@ -23,8 +23,6 @@ class UserRegisterData extends Data
     #[Required]
     public DeviceData $device;
 
-    #[Nullable]
-    public ?string $userId;
 
     #[Required]
     public bool $acceptTerms;

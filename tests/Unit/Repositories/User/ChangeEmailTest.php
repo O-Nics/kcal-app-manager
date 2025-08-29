@@ -29,7 +29,7 @@ test('changeEmail updates email and persists to database', function () {
         'plan' => 'free',
     ]);
 
-    $data = new UpdateMailData(email: 'new@example.test');
+    $data = makeUpdateEmailData(email: 'new@example.test');
 
     $updated = userRepo()->changeEmail($user, $data);
 
@@ -44,12 +44,12 @@ test('changeEmail preserves other attributes and bumps updated_at when value cha
         'password' => Hash::make('x'),
         'accept_terms' => true,
         'plan' => 'free',
-        'updated_at' => now()->subDay(),
     ]);
-
+    $user->updated_at = now()->subDay();
+    $user->saveQuietly();
     $beforeUpdatedAt = $user->updated_at->copy();
 
-    $updated = userRepo()->changeEmail($user, new UpdateMailData(email: 'second@example.test'));
+    $updated = userRepo()->changeEmail($user, makeUpdateEmailData(email: 'second@example.test'));
 
     expect($updated->plan)->toBe('free')
         ->and($updated->accept_terms)->toBeTrue()
@@ -71,7 +71,7 @@ test('changeEmail is a no-op for timestamps when setting the same email', functi
 
     $before = $user->fresh()->updated_at->copy();
 
-    $updated = userRepo()->changeEmail($user->fresh(), new UpdateMailData(email: 'same@example.test'));
+    $updated = userRepo()->changeEmail($user->fresh(), makeUpdateEmailData(email: 'same@example.test'));
 
     // Eloquent does not touch timestamps when the attribute is not dirty
     expect($updated->updated_at->eq($before))->toBeTrue()
@@ -88,7 +88,7 @@ test('changeEmail stores exact casing and plus-tags (no normalization)', functio
     ]);
 
     $mail = 'MiXeD+tag@Example.TEST';
-    $updated = userRepo()->changeEmail($user, new UpdateMailData(email: $mail));
+    $updated = userRepo()->changeEmail($user, makeUpdateEmailData(email: $mail));
 
     expect($updated->email)->toBe($mail)
         ->and(User::find($user->id)->email)->toBe($mail);
@@ -103,8 +103,8 @@ test('changeEmail can be called multiple times in sequence', function () {
         'plan' => 'free',
     ]);
 
-    userRepo()->changeEmail($user, new UpdateMailData(email: 'second@example.test'));
-    $final = userRepo()->changeEmail($user->fresh(), new UpdateMailData(email: 'third@example.test'));
+    userRepo()->changeEmail($user, makeUpdateEmailData(email: 'second@example.test'));
+    $final = userRepo()->changeEmail($user->fresh(), makeUpdateEmailData(email: 'third@example.test'));
 
     expect($final->email)->toBe('third@example.test')
         ->and(User::find($user->id)->email)->toBe('third@example.test');
@@ -119,7 +119,7 @@ test('changeEmail returns the same user instance (id unchanged)', function () {
         'plan' => 'free',
     ]);
 
-    $ret = userRepo()->changeEmail($user, new UpdateMailData(email: 'brandnew@example.test'));
+    $ret = userRepo()->changeEmail($user, makeUpdateEmailData(email: 'brandnew@example.test'));
 
     expect($ret->id)->toBe($user->id);
 });

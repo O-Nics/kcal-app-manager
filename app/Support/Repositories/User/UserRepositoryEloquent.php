@@ -370,7 +370,7 @@ class UserRepositoryEloquent extends BaseRepository implements UserRepository
     public function updatePassword(User $user, UpdatePasswordData|AddPasswordData $updatePasswordData): User
     {
         $this->changePassword($user, $updatePasswordData->password);
-        if( $updatePasswordData->logoutAllDevices && $updatePasswordData->device->deviceId != null && $updatePasswordData->device->deviceId != "") {
+        if($updatePasswordData instanceof UpdatePasswordData && $updatePasswordData->logoutAllDevices && $updatePasswordData->device->deviceId != null && $updatePasswordData->device->deviceId != "") {
             $devices = $user->devices()->where('id','!=' ,$updatePasswordData->device->deviceId)->get();
             foreach ($devices as $device) {
                 /**

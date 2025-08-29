@@ -311,6 +311,7 @@ class UserRepositoryEloquent extends BaseRepository implements UserRepository
         }
         $user->tokens()->where('id', $device->access_token_id)->delete();
         $user->tokens()->where('id', $device->refresh_token_id)->delete();
+
         $device->delete();
     }
 

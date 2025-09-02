@@ -9,6 +9,8 @@ use App\Features\Customer\Data\PasswordCustomerData;
 use App\Features\Customer\Data\RegisterCustomerData;
 use App\Features\Customer\Data\WeightCustomerData;
 use App\Features\Customer\Services\ProgramPlanner;
+use App\Features\ProgramPlanner\Contracts\PolicyProvider;
+use App\Features\ProgramPlanner\Domain\ProgramRequest;
 use App\Models\ActivityLevel;
 use App\Models\BodyMass;
 use App\Models\Customer;
@@ -888,19 +890,21 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
 
     }
 
-    public function planAndAddToCustomer(CreateProgramData $createProgramData, Customer $customer): Customer{
-        $planner = new ProgramPlanner();
+    public function planAndAddToCustomerV1(CreateProgramData $createProgramData, Customer $customer): Customer
+    {
+        // LEGACY v1 path — keep old behavior
+        $planner = new \App\Features\Customer\Services\ProgramPlanner();
         $program = $planner->build($createProgramData);
-
+        dd($program);
         $customer->gender = $createProgramData->gender;
 
-        if(Goal::query()->find($createProgramData->goalId)){
+        if (Goal::query()->find($createProgramData->goalId)) {
             $customer->goal()->associate(Goal::query()->find($createProgramData->goalId));
         } else {
             $customer->goal()->associate(Goal::query()->where('code', '2')->first());
         }
 
-        if(ActivityLevel::query()->find($createProgramData->activityLevelId)){
+        if (ActivityLevel::query()->find($createProgramData->activityLevelId)) {
             $customer->activityLevel()->associate(ActivityLevel::query()->find($createProgramData->activityLevelId));
         } else {
             $customer->activityLevel()->associate(ActivityLevel::query()->where('code', '1')->first());
@@ -931,6 +935,87 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
         $mealTypes = MealType::query()->get();
         $start = Carbon::now()->startOfDay();
 
+        return $this->updateKcalPerMeal($customer, $program->per_meal_kcal);
+    }
+
+    public function planAndAddToCustomer(CreateProgramData $createProgramData, Customer $customer): Customer
+    {
+        // NEW v2 path — uses DI + ProgramRequest mapping
+        $planner = app(\App\Features\ProgramPlanner\ProgramPlanner::class);
+        $policy  = app(PolicyProvider::class);
+
+        $goalModel = Goal::query()->find($createProgramData->goalId);
+        $goalKeyRaw = $goalModel->value ?? $goalModel->code ?? 'maintain';
+
+        $age = Carbon::parse($createProgramData->birthDate)->age;
+        $heightM = $createProgramData->height / 100;
+        $bmi = $heightM > 0 ? ($createProgramData->startWeight / ($heightM * $heightM)) : 0.0;
+
+        $mealUse = [
+            'breakfast'       => true,
+            'snack_morning'   => true,
+            'lunch'           => true,
+            'snack_afternoon' => true,
+            'dinner'          => true,
+        ];
+        $mealProfile = $policy->mealProfileFor(is_string($goalKeyRaw) ? $goalKeyRaw : (string)$goalKeyRaw);
+
+        $request = new ProgramRequest(
+            goal: (string)$goalKeyRaw,
+            activityLevelId: (int)$createProgramData->activityLevelId,
+            weight: (float)$createProgramData->startWeight,
+            height: (float)$createProgramData->height,
+            age: (int)$age,
+            sex: $createProgramData->gender,
+            bmi: (float)$bmi,
+            startWeight: (float)$createProgramData->startWeight,
+            targetWeight: $createProgramData->targetWeight,
+            weeklyKg: $createProgramData->hebdoChange ?? null,
+            mealUse: $mealUse,
+            mealProfile: $mealProfile,
+            trainDays: $createProgramData->trainingDaysOfWeek,
+            hydrationMlPerKg: null,
+        );
+
+        $program = $planner->build($request);
+        dd($program);
+
+
+        $customer->gender = $createProgramData->gender;
+
+        if (Goal::query()->find($createProgramData->goalId)) {
+            $customer->goal()->associate(Goal::query()->find($createProgramData->goalId));
+        } else {
+            $customer->goal()->associate(Goal::query()->where('code', '2')->first());
+        }
+
+        if (ActivityLevel::query()->find($createProgramData->activityLevelId)) {
+            $customer->activityLevel()->associate(ActivityLevel::query()->find($createProgramData->activityLevelId));
+        } else {
+            $customer->activityLevel()->associate(ActivityLevel::query()->where('code', '1')->first());
+        }
+
+        $customer->height = $createProgramData->height;
+        $customer->birth_date = $createProgramData->birthDate;
+        $customer->wanted_weight = $createProgramData->targetWeight;
+        $customer->start_weight = $createProgramData->startWeight;
+
+        $customer->obj_kcals = $program->daily_kcal;
+        $customer->training_days_of_week = $program->training_days ?? null;
+        $customer->obj_steps = $program->daily_steps_goal;
+        $customer->obj_weight_hebdo_change = $program->meta->weekly_kg ?? null;
+        $customer->max_weight_hebdo_change = $program->meta->max_weekly_kg ?? null;
+        $customer->time_to_achieve = (int) ($program->duration_days ?? 0);
+        $customer->obj_proteins = $program->macro_ratios->protein;
+        $customer->obj_lipids   = $program->macro_ratios->fat;
+        $customer->obj_glucides = $program->macro_ratios->carbs;
+        $customer->obj_water = (int) $program->daily_water_goal_ml;
+        $customer->type_water = 'glass';
+        $customer->volume_water_by_each = 250;
+        $customer->train_kcal = $program->meta->train_kcal ?? null;
+        $customer->rest_kcal  = $program->meta->rest_kcal ?? null;
+        $customer->form_passed_at = Carbon::now();
+        $customer->save();
 
         return $this->updateKcalPerMeal($customer, $program->per_meal_kcal);
     }

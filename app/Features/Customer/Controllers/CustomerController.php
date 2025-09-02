@@ -107,7 +107,6 @@ class CustomerController extends Controller
 
         $user = auth()->user();
         $this->ensureCustomer->userCanManageCustomer($user, $customer);
-
         $customer = $this->customerRepository->createProgramCustomer($createProgramData, $customer, $user);
 
         return response()->json([

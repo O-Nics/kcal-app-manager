@@ -5,6 +5,7 @@ namespace App\Features\Customer\Data;
 use App\Models\Customer;
 use Illuminate\Support\Carbon;
 use Spatie\LaravelData\Attributes\Validation\Exists;
+use Spatie\LaravelData\Attributes\Validation\Nullable;
 use Spatie\LaravelData\Attributes\Validation\Required;
 use Spatie\LaravelData\Attributes\WithCast;
 use Spatie\LaravelData\Casts\DateTimeInterfaceCast;
@@ -22,8 +23,8 @@ class CreateProgramData extends Data
     #[Required]
     public float $startWeight;
 
-    #[Required]
-    public float $targetWeight;
+    #[Nullable]
+    public ?float $targetWeight;
 
     #[Required]
     public string $gender;
@@ -37,8 +38,8 @@ class CreateProgramData extends Data
     #[WithCast(DateTimeInterfaceCast::class, format: 'd-m-Y')]
     public ?Carbon $birthDate = null;
 
-    #[Required]
-    public float $hebdoChange;
+    #[Nullable]
+    public ?float $hebdoChange;
 
     #[Required]
     public string $heightUnit = 'cm';

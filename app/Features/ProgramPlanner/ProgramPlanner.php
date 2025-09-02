@@ -2,13 +2,16 @@
 
 namespace App\Features\ProgramPlanner;
 
+use App\Features\ProgramPlanner\Contracts\PolicyProvider;
 use App\Features\ProgramPlanner\Contracts\ProgramEngine;
 use App\Features\ProgramPlanner\Domain\ProgramPlan;
 use App\Features\ProgramPlanner\Domain\ProgramRequest;
 
 final class ProgramPlanner
 {
-    public function __construct(private readonly ProgramEngine $engine) {}
+    public function __construct(
+        private readonly ProgramEngine $engine,
+    ) {}
 
     public function build(ProgramRequest $r): ProgramPlan
     {
@@ -17,13 +20,11 @@ final class ProgramPlanner
 
         // pick adjustment
         [$adjKcal, $adjMeta] = match ($r->goal) {
-            'weight_loss'            => $this->engine->computeDeficitPerDay($r, $tdee),
+            'weight_loss' , 'recomp'           => $this->engine->computeDeficitPerDay($r, $tdee),
             'weight_gain', 'gain_muscles' => $this->engine->computeSurplusPerDay($r, $tdee),
             default                  => [0, ['reason' => 'maintain']],
         };
 
-
-//        dd($adjKcal, $adjMeta, $bmr, $tdee);
 
         $candidateDaily = (int) round($tdee + $adjKcal);
         $dailyKcal      = $this->engine->clampDailyKcal($tdee, $candidateDaily, $r->sex);
@@ -35,7 +36,6 @@ final class ProgramPlanner
         $steps          = $this->engine->steps($r, cutFloor: true);
         $durationDays   = $this->engine->estimateDurationDays($r->targetWeight, $r->startWeight, $r->weeklyKg);
 
-        // Map Distribution -> per_meal_kcal array
         $perMeal = [];
         if (isset($distribution)) {
             if (is_array($distribution)) {
@@ -65,6 +65,14 @@ final class ProgramPlanner
                 'pal' => $pal,
                 'tdee'=> (int) round($tdee),
                 'adjust' => $adjMeta,
+                'goal_adjust_kcal' => $adjKcal,
+                'goal_code' => $r->goal,
+                'weekly_kg' => $adjMeta['weekly_kg'] ?? null,
+                'max_weekly_kg' => $adjMeta['max_weekly_kg'] ?? null,
+                'cap_pct' => $adjMeta['cap_pct'] ?? null,
+                'capped_by' => $adjMeta['capped_by'] ?? null,
+                'train_kcal' => $adjMeta['train_kcal'] ?? null,
+                'rest_kcal' => $adjMeta['rest_kcal'] ?? null,
                 ...($macroData['meta'] ?? []),
                 'duration_days' => $durationDays,
             ],

@@ -64,16 +64,196 @@ final class DefaultProgramEngine implements ProgramEngine
 
     public function computeDeficitPerDay(ProgramRequest $r, float $tdee): array
     {
-        $capPct  = $this->policy->deficitCapPct($r->bmi, $r->activityLevelId, $r->isRecomp());
-        $kcal    = (int) round(-$tdee * $capPct); // negative (deficit)
-        return [$kcal, ['cap_pct' => $capPct]];
+        // 1) Requested weekly loss (kg/week) – default 0.5
+        $requestedWeeklyKg = (isset($r->weeklyKg) && is_numeric($r->weeklyKg))
+            ? (float) $r->weeklyKg
+            : 0.5;
+
+        // 2) Cap by % bodyweight/week (default 1.0%)
+        $lossPctCap       = (float) (\config('program.weekly_loss_pct_cap', 0.010));
+        $weightRef        = (isset($r->weight) && $r->weight > 0) ? (float) $r->weight : null;
+        $weeklyKgCapByW   = $weightRef ? round($weightRef * $lossPctCap, 3) : $requestedWeeklyKg;
+        $weeklyKgByWeight = min($requestedWeeklyKg, $weeklyKgCapByW);
+
+        $cappedBy = null;
+        if ($requestedWeeklyKg > $weeklyKgByWeight) {
+            $cappedBy = 'weekly_pct_cap';
+        }
+
+        // 3) Adaptive TDEE cap
+        $bmi = (isset($r->bmi) && $r->bmi > 0)
+            ? (float) $r->bmi
+            : (($weightRef && isset($r->height) && $r->height > 0)
+                ? $weightRef / pow(((float) $r->height) / 100.0, 2)
+                : 25.0);
+
+        $capPct = (float) $this->policy->deficitCapPct($bmi, (int) $r->activityLevelId, $r->isRecomp());
+        $maxDailyDeficitByPct = - ($tdee * $capPct); // kcal/day (negative)
+
+        // 4) Daily deficit from requested weekly (post weight-cap)
+        $dailyFromRequested = - ($weeklyKgByWeight * 7700.0) / 7.0; // kcal/day (negative)
+
+        // 5) Effective applied deficit (respecting TDEE cap)
+        $kcal = (int) round(max($dailyFromRequested, $maxDailyDeficitByPct));
+        if ($dailyFromRequested < $maxDailyDeficitByPct) {
+            $cappedBy = 'tdee_cap';
+        }
+
+        // 6) Effective weekly change derived from applied kcal
+        $effectiveWeeklyKg  = round(abs(($kcal * 7.0) / 7700.0), 3);
+        $effectiveWeeklyPct = ($weightRef && $weightRef > 0)
+            ? round($effectiveWeeklyKg / $weightRef, 4)
+            : null;
+
+        // 7) Theoretical max if only TDEE cap applied
+        $maxWeeklyKgByTdee = round(abs(($maxDailyDeficitByPct * 7.0) / 7700.0), 3);
+
+        // --- NEW: train/rest kcal only for recomp or gain_muscles ---
+        $trainKcal = null;
+        $restKcal  = null;
+
+        $goal = is_string($r->goal ?? null) ? strtolower($r->goal) : null;
+        $isCyclingGoal = in_array($goal, ['recomp', 'gain_muscles'], true);
+
+        if ($isCyclingGoal && $tdee > 0) {
+            ['train_kcal' => $trainKcal, 'rest_kcal' => $restKcal] = $this->trainAndRestKcal($kcal, $tdee, $r);
+        }
+
+        return [
+            $kcal,
+            [
+                'cap_pct'             => $capPct,
+                'weekly_kg'           => $effectiveWeeklyKg,
+                'weekly_pct'          => $effectiveWeeklyPct,
+                'requested_weekly_kg' => $requestedWeeklyKg,
+                'capped_by'           => $cappedBy,
+                'max_weekly_kg'       => $maxWeeklyKgByTdee,
+                // only non-null for recomp/gain_muscles with training days
+                'train_kcal'          => $trainKcal,
+                'rest_kcal'           => $restKcal,
+            ],
+        ];
     }
 
+    private function trainAndRestKcal(int $kcal, float $tdee, ProgramRequest $r) : array
+    {
+        $trainKcal = null;
+        $restKcal  = null;
+            // daily target from deficit
+            $dailyTarget = (int) round($tdee + $kcal); // kcal (kcal is negative)
+
+            // how many training days? prefer $r->trainDays, else derive from array
+            $trainDays = isset($r->trainDays) ? (int) $r->trainDays
+                : (is_array($r->trainingDaysOfWeek ?? null) ? count($r->trainDays) : 0);
+            $trainDays = max(0, min($trainDays, 6));
+            $restDays  = 7 - $trainDays;
+
+            if ($trainDays > 0) {
+                // ±8% around TDEE, then clamp & rescale to keep weekly average == dailyTarget
+                $upShift   = (int) round(0.08 * $tdee);
+                $downShift = (int) round(0.08 * $tdee);
+
+                $rawTrain = $dailyTarget + $upShift;
+                $rawRest  = $dailyTarget - $downShift;
+
+                // safety per day
+                $sex = $r->sex ?? null;
+                $rawTrain = $this->clampDailyKcal($tdee, $rawTrain, $sex);
+                $rawRest  = $this->clampDailyKcal($tdee, $rawRest,  $sex);
+
+                // rescale to maintain the intended weekly average
+                $avgNow = ($rawTrain * $trainDays + $rawRest * $restDays) / 7.0;
+                if ($avgNow != 0.0) {
+                    $scale    = $dailyTarget / $avgNow;
+                    $trainKcal = (int) round($rawTrain * $scale);
+                    $restKcal  = (int) round($rawRest  * $scale);
+
+                    // re-clamp after rescale
+                    $trainKcal = $this->clampDailyKcal($tdee, $trainKcal, $sex);
+                    $restKcal  = $this->clampDailyKcal($tdee, $restKcal,  $sex);
+                } else {
+                    $trainKcal = $rawTrain;
+                    $restKcal  = $rawRest;
+                }
+            }
+
+            return ['train_kcal' => $trainKcal ?? null, 'rest_kcal' => $restKcal ?? null];
+
+
+    }
     public function computeSurplusPerDay(ProgramRequest $r, float $tdee): array
     {
-        $capPct = $this->policy->surplusCapPct($r->bmi, $r->activityLevelId, $r->isRecomp());
-        $kcal   = (int) round($tdee * $capPct); // positive (surplus)
-        return [$kcal, ['cap_pct' => $capPct]];
+        // 1) Requested weekly gain (kg/week); default to 0.25 kg/week if not provided
+        $requestedWeeklyKg = null;
+        if (isset($r->weeklyKg) && is_numeric($r->weeklyKg)) {
+            $requestedWeeklyKg = (float) $r->weeklyKg;
+        }
+        if (!($requestedWeeklyKg > 0)) {
+            $requestedWeeklyKg = 0.25; // lean bulk default
+        }
+
+        // 2) Cap by % of bodyweight per week (lean bulk ~0.6%/week by default)
+        $gainPctCap   = (float) (\config('program.weekly_gain_pct_cap', 0.006));
+        $weightRef    = (isset($r->weight) && $r->weight > 0) ? (float) $r->weight : null;
+        $weeklyKgCapW = $weightRef ? round($weightRef * $gainPctCap, 3) : $requestedWeeklyKg;
+        $weeklyKgReq  = min($requestedWeeklyKg, $weeklyKgCapW);
+
+        $cappedBy = null;
+        if ($requestedWeeklyKg > $weeklyKgReq) {
+            $cappedBy = 'weekly_pct_cap';
+        }
+
+        // 3) Adaptive TDEE surplus cap via policy
+        $bmi = (isset($r->bmi) && $r->bmi > 0)
+            ? (float) $r->bmi
+            : (($weightRef && isset($r->height) && $r->height > 0)
+                ? $weightRef / pow(((float) $r->height) / 100.0, 2)
+                : 23.0);
+
+        $capPct      = (float) $this->policy->surplusCapPct($bmi, (int) $r->activityLevelId, $r->isRecomp());
+        $maxDailyByPct =  $tdee * $capPct; // kcal/day (positive)
+
+        // 4) Daily surplus from requested weekly (post weight-cap)
+        $dailyFromHebdo = ($weeklyKgReq * 7700.0) / 7.0; // kcal/day (positive)
+
+        // 5) Effective applied surplus (respecting TDEE cap)
+        $kcal = (int) round(min($dailyFromHebdo, $maxDailyByPct));
+        if ($dailyFromHebdo > $maxDailyByPct) {
+            $cappedBy = 'tdee_cap';
+        }
+
+        // 6) Effective weekly gain derived from applied kcal
+        $effectiveWeeklyKg  = round(($kcal * 7.0) / 7700.0, 3);
+        $effectiveWeeklyPct = ($weightRef && $weightRef > 0)
+            ? round($effectiveWeeklyKg / $weightRef, 4)
+            : null;
+
+        // 7) Theoretical max weekly gain if only TDEE cap applies
+        $maxWeeklyKgByTdee = round(($maxDailyByPct * 7.0) / 7700.0, 3);
+// --- NEW: train/rest kcal only for recomp or gain_muscles ---
+        $trainKcal = null;
+        $restKcal  = null;
+
+        $goal = is_string($r->goal ?? null) ? strtolower($r->goal) : null;
+        $isCyclingGoal = in_array($goal, ['recomp', 'gain_muscles'], true);
+
+        if ($isCyclingGoal && $tdee > 0) {
+            ['train_kcal' => $trainKcal, 'rest_kcal' => $restKcal] = $this->trainAndRestKcal($kcal, $tdee, $r);
+        }
+
+        return [
+            $kcal,
+            [
+                'cap_pct'       => $capPct,
+                'weekly_kg'     => $effectiveWeeklyKg,
+                'weekly_pct'    => $effectiveWeeklyPct,
+                'requested_weekly_kg' => $requestedWeeklyKg,
+                'capped_by'     => $cappedBy,
+                'train_kcal'    => $trainKcal,
+                'rest_kcal'     => $restKcal,
+                'max_weekly_kg' => $maxWeeklyKgByTdee,
+            ],
+        ];
     }
 
     public function clampDailyKcal(float $tdee, int $candidateDaily, ?string $sex): int
@@ -160,23 +340,73 @@ final class DefaultProgramEngine implements ProgramEngine
 
     public function distributeMeals(int $dailyKcal, array $mealUse, array $profile): Distribution
     {
-        // mealUse: ['breakfast'=>true, ...]  | profile: ['breakfast'=>0.25, ...]
-        $dist = [];
-        $sum  = 0.0;
-        foreach ($profile as $slot => $pct) {
-            if (!empty($mealUse[$slot])) {
-                $kc = (int) round($dailyKcal * $pct);
-                $dist[$slot] = $kc;
-                $sum += $kc;
-            }
-        }
-        // reconcile to dailyKcal
-        if ((int)$sum !== $dailyKcal && !empty($dist)) {
-            // adjust dinner (or the last) to match exactly
-            $last = array_key_last($dist);
-            $dist[$last] += ($dailyKcal - (int)$sum);
+        $mealMap = [
+            1 => 'breakfast',
+            2 => 'snack_morning',
+            3 => 'lunch',
+            4 => 'snack_afternoon',
+            5 => 'dinner',
+        ];
+
+        if (empty($mealUse)) {
+            // Fallback: un seul bloc, clé explicite
+//            return ['other' => (int) $dailyKcal];
+            return new Distribution(['other' => (int) $dailyKcal]);
         }
 
+        // Normaliser $mealUse en noms de slots (accepte codes numériques ou noms directs)
+        $slots = [];
+        foreach ($mealUse as $v) {
+            if (is_int($v) || (is_string($v) && ctype_digit($v))) {
+                $code = (int) $v;
+                if (isset($mealMap[$code])) {
+                    $slots[] = $mealMap[$code];
+                }
+            } elseif (is_string($v)) {
+                $slots[] = $v; // ex: 'lunch'
+            }
+        }
+
+        if (empty($slots)) {
+
+            return new Distribution(['other' => (int) $dailyKcal]);
+        }
+
+        // Comptage des occurrences par slot (pour partager la part d'un slot répété)
+        $occ = array_count_values($slots);
+
+        // Répartition brute par slot (accumulation)
+        $rawBySlot = [];
+        foreach ($slots as $slot) {
+            $slotShare = $profile[$slot] ?? 0.0;
+            $count     = max(1, $occ[$slot] ?? 1);
+            // chaque occurrence du même slot reçoit une fraction égale de sa part totale
+            $rawBySlot[$slot] = ($rawBySlot[$slot] ?? 0.0) + ($slotShare / $count);
+        }
+
+        // Si aucun des slots demandés n'existe dans le profil -> parts égales sur les slots demandés
+        $sum = array_sum($rawBySlot);
+        if ($sum <= 0) {
+            $equal = 1 / max(1, count($slots));
+            $rawBySlot = [];
+            foreach ($slots as $slot) {
+                $rawBySlot[$slot] = ($rawBySlot[$slot] ?? 0) + $equal / max(1, ($occ[$slot] ?? 1));
+            }
+            $sum = array_sum($rawBySlot);
+        }
+
+        // Normalisation (sécurité)
+        if ($sum > 0 && abs($sum - 1.0) > 1e-9) {
+            foreach ($rawBySlot as $k => $v) {
+                $rawBySlot[$k] = $v / $sum;
+            }
+        }
+
+        // Conversion en kcal, clés = noms de slots (breakfast, lunch, ...)
+        $dist = [];
+        foreach ($rawBySlot as $slot => $ratio) {
+            $dist[$slot] = (int) round($dailyKcal * $ratio);
+        }
         return new Distribution($dist);
     }
 
@@ -192,17 +422,27 @@ final class DefaultProgramEngine implements ProgramEngine
     {
         $steps = $this->policy->stepsFor($r->activityLevelId);
         if ($cutFloor && $r->isCut()) {
-            $steps = max($steps, 8000);
+            $steps = $steps + 750;
         }
         return $steps;
     }
 
     public function estimateDurationDays(?float $targetWeight, float $startWeight, ?float $weeklyKg): ?int
     {
-        if ($targetWeight === null || $weeklyKg === null || $weeklyKg == 0.0) return null;
-        $delta = $targetWeight - $startWeight;
-        $perWeek = $weeklyKg; // positive for gain, negative for loss
-        $weeks = $delta / $perWeek;
-        return $weeks > 0 ? (int) round($weeks * 7) : null;
+        if ($targetWeight === null || $weeklyKg === null || $weeklyKg == 0.0) {
+            return null;
+        }
+
+        $delta   = (float) $targetWeight - (float) $startWeight;
+        if ($delta === 0.0) {
+            return 0;
+        }
+
+        $weeks = abs($delta) / max(0.0001, abs((float) $weeklyKg));
+
+
+        return (int) ceil($weeks * 7);
     }
+
+
 }

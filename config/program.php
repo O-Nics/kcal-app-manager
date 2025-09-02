@@ -10,7 +10,7 @@ return [
     'activity_levels' => [
         1 => 1.10, // bedrest
         2 => 1.20, // sedentary
-        3 => 1.35, // light walk
+        3 => 1.33, // light walk
         4 => 1.45, // light sport
         5 => 1.55, // moderate
         6 => 1.60, // moderate sport
@@ -127,7 +127,7 @@ return [
         'maintain'     => ['min' => 1.6, 'default' => 1.8, 'max' => 2.2],
         'recomp'       => ['min' => 2.0, 'default' => 2.1, 'max' => 2.4],
     ],
-    'protein_pct_hard_cap' => 32, // cap % kcal protein to avoid starving carbs/fat
+    'protein_pct_hard_cap' => 40, // cap % kcal protein to avoid starving carbs/fat
 
     'fat_pct_ranges' => [
         'weight_loss'  => ['min' => 20, 'max' => 30],

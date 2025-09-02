@@ -17,11 +17,8 @@ final class MetaData implements \JsonSerializable
         public readonly ?float  $max_weekly_kg = null,
         public readonly ?float  $cap_pct = null,
         public readonly ?string $capped_by = null,
-        public readonly ?int    $weekly_avg_kcal = null,
         public readonly ?int    $train_kcal = null,
         public readonly ?int    $rest_kcal = null,
-        public readonly ?float  $direction = null,
-        public readonly ?float  $requested_weekly_kg = null,
     ){}
 
     public static function fromArray(array $a): self
@@ -37,14 +34,11 @@ final class MetaData implements \JsonSerializable
             max_weekly_kg: isset($a['max_weekly_kg']) ? (float)$a['max_weekly_kg'] : null,
             cap_pct: isset($a['cap_pct']) ? (float)$a['cap_pct'] : null,
             capped_by: $a['capped_by'] ?? null,
-            weekly_avg_kcal: $a['weekly_avg_kcal'] ?? null,
             train_kcal: $a['train_kcal'] ?? null,
             rest_kcal: $a['rest_kcal'] ?? null,
-            direction: isset($a['direction']) ? (float)$a['direction'] : null,
-            requested_weekly_kg: isset($a['requested_weekly_kg']) ? (float)$a['requested_weekly_kg'] : null,
         );
         $obj->extra = array_diff_key($a, array_flip([
-            'bmr', 'pal', 'tdee', 'goal_adjust_kcal', 'goal_code', 'weekly_pct', 'weekly_kg', 'cap_pct', 'capped_by', 'weekly_avg_kcal', 'train_kcal', 'rest_kcal', 'direction', 'requested_weekly_kg'
+            'bmr', 'pal', 'tdee', 'goal_adjust_kcal', 'goal_code', 'weekly_pct', 'weekly_kg', 'cap_pct', 'capped_by', 'train_kcal', 'rest_kcal',
         ]));
         return $obj;
     }
@@ -66,11 +60,8 @@ final class MetaData implements \JsonSerializable
                 'weekly_kg' => $this->weekly_kg,
                 'cap_pct' => $this->cap_pct,
                 'capped_by' => $this->capped_by,
-                'weekly_avg_kcal' => $this->weekly_avg_kcal,
                 'train_kcal' => $this->train_kcal,
                 'rest_kcal' => $this->rest_kcal,
-                'direction' => $this->direction,
-                'requested_weekly_kg' => $this->requested_weekly_kg,
             ]) + $this->extra;
     }
 }

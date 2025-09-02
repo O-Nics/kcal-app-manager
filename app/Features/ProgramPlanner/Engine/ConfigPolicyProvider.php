@@ -56,7 +56,7 @@ final class ConfigPolicyProvider implements PolicyProvider
 
         // Hard ceiling
         $hard = (float) config('program.deficit_cap_hard_ceiling', 0.35);
-        return max(0.0, min($cap, $hard));
+        return max(0.10, min($cap, $hard));
     }
 
     public function surplusCapPct(float $bmi, int $activity, bool $isRecomp): float
@@ -78,7 +78,7 @@ final class ConfigPolicyProvider implements PolicyProvider
             $cap += (float) config('program.recomp_cap_tweak_surplus', -0.01);
         }
 
-        return max(0.0, $cap);
+        return max(0.05, $cap);
     }
 
     public function minTdeeRatio(): float
@@ -105,7 +105,7 @@ final class ConfigPolicyProvider implements PolicyProvider
                 'min'     => (float) ($perGoal['min'] ?? config('program.min_protein_per_kg', 1.6)),
                 'default' => (float) ($perGoal['default'] ?? config('program.min_protein_per_kg', 1.6)),
                 'max'     => (float) ($perGoal['max'] ?? config('program.max_protein_per_kg', 2.2)),
-                'pct_cap' => (int)   config('program.protein_pct_hard_cap', 32),
+                'pct_cap' => (int)   config('program.protein_pct_hard_cap', 40),
             ];
         }
 
@@ -209,4 +209,6 @@ final class ConfigPolicyProvider implements PolicyProvider
             default        => 'very_active',
         };
     }
+
+
 }

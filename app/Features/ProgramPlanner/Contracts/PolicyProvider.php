@@ -21,4 +21,6 @@ interface PolicyProvider
     public function carbsAbsMinG(): int;
     public function carbsMinPerKg(int $activity, ?array $trainDays, string $goal): float;
     public function enforceProteinOverCarbs(): bool;
+
+
 }

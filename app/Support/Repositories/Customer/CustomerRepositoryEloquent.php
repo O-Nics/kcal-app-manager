@@ -951,15 +951,8 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
         $heightM = $createProgramData->height / 100;
         $bmi = $heightM > 0 ? ($createProgramData->startWeight / ($heightM * $heightM)) : 0.0;
 
-        $mealUse = [
-            'breakfast'       => true,
-            'snack_morning'   => true,
-            'lunch'           => true,
-            'snack_afternoon' => true,
-            'dinner'          => true,
-        ];
-        $mealProfile = $policy->mealProfileFor(is_string($goalKeyRaw) ? $goalKeyRaw : (string)$goalKeyRaw);
 
+        $mealProfile = $policy->mealProfileFor(is_string($goalKeyRaw) ? $goalKeyRaw : (string)$goalKeyRaw);
         $request = new ProgramRequest(
             goal: (string)$goalKeyRaw,
             activityLevelId: (int)$createProgramData->activityLevelId,
@@ -971,7 +964,7 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
             startWeight: (float)$createProgramData->startWeight,
             targetWeight: $createProgramData->targetWeight,
             weeklyKg: $createProgramData->hebdoChange ?? null,
-            mealUse: $mealUse,
+            mealUse: $createProgramData->mealUse,
             mealProfile: $mealProfile,
             trainDays: $createProgramData->trainingDaysOfWeek,
             hydrationMlPerKg: null,

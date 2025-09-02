@@ -662,6 +662,7 @@ final class ProgramPlanner
             $rawTrain  = $dailyKcal + $upShift;
             $rawRest   = $dailyKcal - $downShift;
 
+
             // Garde-fous (jamais trop bas/haut selon les règles globales)
             $rawTrain = $this->clampDailyKcalForSafety($rawTrain, $tdee, $d->gender ?? null);
             $rawRest  = $this->clampDailyKcalForSafety($rawRest,  $tdee, $d->gender ?? null);

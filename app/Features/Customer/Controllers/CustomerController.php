@@ -27,7 +27,7 @@ use App\Features\Customer\Data\UpdateUsernameData;
 use App\Features\Customer\Data\UpdateWaterVolumeData;
 use App\Features\Customer\Data\UpdateWeightUnitData;
 use App\Features\Customer\Data\WeightCustomerData;
-use App\Features\Customer\Services\ProgramPlanner;
+use App\Features\Customer\Services\OldProgramPlanner;
 use App\Models\Customer;
 use App\Models\User;
 use App\Support\Abstract\Controller;
@@ -297,7 +297,7 @@ class CustomerController extends Controller
         $mealTypeArray = $customer->getMealTypeAsArray();
         $goal = $customer->goal->value;
 
-        $prog = new ProgramPlanner();
+        $prog = new OldProgramPlanner();
 
         $kcalPerMeal = $prog->distributeByMealUse($updateKcalData->kcal, $mealTypeArray,$prog->getBaseProfile($goal));
 

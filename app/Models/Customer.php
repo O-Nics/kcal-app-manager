@@ -161,7 +161,7 @@ class Customer extends Model implements Documentable
         return $this->belongsTo(Document::class, 'profile_image_id');
     }
 
-    public function weights(): HasMany
+    public function bodyMasses(): HasMany
     {
         return $this->hasMany(BodyMass::class, 'customer_id', 'id');
     }

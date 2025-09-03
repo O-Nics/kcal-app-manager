@@ -2,18 +2,17 @@
 
 namespace App\Features\ProgramPlanner;
 
-use App\Features\ProgramPlanner\Contracts\PolicyProvider;
-use App\Features\ProgramPlanner\Contracts\ProgramEngine;
-use App\Features\ProgramPlanner\Domain\ProgramPlan;
-use App\Features\ProgramPlanner\Domain\ProgramRequest;
+use App\Features\ProgramPlanner\Nutrition\Domain\ProgramPlan;
+use App\Features\ProgramPlanner\Nutrition\Domain\ProgramRequest;
+use App\Features\ProgramPlanner\Nutrition\Engine\ProgramEngine;
 
-final class ProgramPlanner
+final readonly class ProgramPlanner
 {
     public function __construct(
-        private readonly ProgramEngine $engine,
+        private ProgramEngine $engine,
     ) {}
 
-    public function build(ProgramRequest $r): ProgramPlan
+    public function plan(ProgramRequest $r): ProgramPlan
     {
         $bmr  = $this->engine->computeBmr($r);
         $tdee = $this->engine->computeTdee($bmr, $r->activityLevelId);
@@ -28,7 +27,6 @@ final class ProgramPlanner
 
         $candidateDaily = (int) round($tdee + $adjKcal);
         $dailyKcal      = $this->engine->clampDailyKcal($tdee, $candidateDaily, $r->sex);
-
         $macroData      = $this->engine->planMacros($dailyKcal, $r);
         $profile        = $r->mealProfile;     // déjà résolu côté controller/policy
         $distribution   = $this->engine->distributeMeals($dailyKcal, $r->mealUse, $profile);

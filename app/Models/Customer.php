@@ -179,4 +179,5 @@ class Customer extends Model implements Documentable
             ->toArray();
     }
 
+
 }

@@ -2,6 +2,7 @@
 
 namespace App\Features\Customer\Controllers;
 
+use App\Feature\Customer\Resources\CustomerResource;
 use App\Features\Auth\Data\RevokeTokenData;
 use App\Features\Auth\Data\UserLoginData;
 use App\Features\Auth\Data\UserRegisterData;
@@ -65,7 +66,7 @@ class CustomerController extends Controller
         $this->ensureCustomer->userCanManageCustomer($user, $customer);
 
         return response()->json([
-            'customer' => $customer,
+            'customer' => new CustomerResource($customer),
         ]);
     }
 
@@ -75,7 +76,7 @@ class CustomerController extends Controller
         $user = auth()->user();
 
         return response()->json([
-            'customer' => $user->customers,
+            'customer' => CustomerResource::collection($user->customers),
         ]);
     }
 
@@ -88,7 +89,7 @@ class CustomerController extends Controller
             $customer = $this->customerRepository->storeCustomer($user, $registerCustomerData);
             return response()->json([
                 'success' => true,
-                'customer' => new $customer
+                'customer' => new CustomerResource($customer)
             ]);
 
         }catch (Throwable $e) {
@@ -211,7 +212,7 @@ class CustomerController extends Controller
         return response()->json([
             'success' => true,
             'updated_plan' => true,
-            'customer' => $customer
+            'customer' => new CustomerResource($customer)
         ]);
 
     }
@@ -229,7 +230,7 @@ class CustomerController extends Controller
         return response()->json([
             'success' => true,
             'updated_plan' => true,
-            'customer' => $customer
+            'customer' => new CustomerResource($customer)
         ]);
 
     }

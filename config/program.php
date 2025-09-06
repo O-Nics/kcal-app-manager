@@ -139,7 +139,7 @@ return [
     'fat_min_g_per_kg' => 0.8,
     'fat_min_abs_g'    => 50,
 
-    'carbs_abs_min_g' => 100, // never go below (brain + training floor)
+    'carbs_abs_min_g' => 120, // never go below (brain + training floor)
     'carbs_min_per_kg_by_activity' => [
         'sedentary'    => 1.5,
         'moderate'     => 2.0,

@@ -11,8 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('user_favorites_vehicles', function (Blueprint $table) {
-            //
+        Schema::create('units', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('abbreviation')->nullable();
+            $table->timestamps();
         });
     }
 
@@ -21,8 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('user_favorites_vehicles', function (Blueprint $table) {
-            //
-        });
+        Schema::dropIfExists('units');
     }
 };

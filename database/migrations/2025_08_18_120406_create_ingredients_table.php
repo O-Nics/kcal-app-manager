@@ -14,21 +14,26 @@ return new class extends Migration
     {
         Schema::create('ingredients', function (Blueprint $table) {
             $table->id();
+
             $table->boolean('verified')->default(false);
+
             $table->foreignUuid('created_by')->nullable()->constrained('customers')->nullOnDelete();
             $table->foreignIdFor(IngredientType::class)->constrained()->cascadeOnDelete();
+            $table->foreignId('image_id')->nullable()->constrained('documents')->nullOnDelete();
 
 
             $table->string('name');
             $table->string('default_unit')->default('g'); // 'g' ou 'ml'
-            $table->integer('reference_value')->default(100); // 100g ou 100ml`
-
-            $table->integer('kcal_for_100');
-            $table->string('barcode')->nullable();
-            $table->longText('conservation_conditions')->nullable();
-            $table->foreignId('image_id')->nullable()->constrained('documents')->nullOnDelete();
-            $table->boolean('is_ai')->default(false);
             $table->string('product_quantity_unit')->nullable();
+            $table->string('barcode')->nullable();
+
+            $table->integer('reference_value')->default(100); // 100g ou 100ml`
+            $table->integer('kcal_for_100');
+
+            $table->longText('conservation_conditions')->nullable();
+            $table->json('ingredients')->nullable();
+
+
             $table->double('product_quantity')->nullable();
             $table->double('fat'); // in g
             $table->double('saturated_fat'); // in g

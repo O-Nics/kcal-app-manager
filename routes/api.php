@@ -9,4 +9,5 @@ require __DIR__.'/api/app.php';
 Route::middleware(['auth:sanctum', 'ability:' . TokenAbility::ACCESS_TOKEN->value,])->group(function () {
     require __DIR__ . '/api/user.php';
     require __DIR__ . '/api/customer.php';
+    require __DIR__ . '/api/food.php';
 });

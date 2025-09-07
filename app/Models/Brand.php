@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
  * * @property int $id
  * * @property string $name
  * * @property bool $is_verified
+ * * @property string $customer_id
+ * * @property-read  Customer $customer
  * */
 class Brand extends Model
 {

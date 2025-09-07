@@ -6,10 +6,14 @@ namespace App\Support\Providers;
 
 
 
+use App\Support\Repositories\Brand\BrandRepository;
+use App\Support\Repositories\Brand\BrandRepositoryEloquent;
 use App\Support\Repositories\Customer\CustomerRepository;
 use App\Support\Repositories\Customer\CustomerRepositoryEloquent;
 use App\Support\Repositories\Document\DocumentRepository;
 use App\Support\Repositories\Document\DocumentRepositoryEloquent;
+use App\Support\Repositories\Ingredient\IngredientRepository;
+use App\Support\Repositories\Ingredient\IngredientRepositoryEloquent;
 use App\Support\Repositories\PasswordReset\PasswordResetRepository;
 use App\Support\Repositories\PasswordReset\PasswordResetRepositoryEloquent;
 use App\Support\Repositories\Session\SessionRepository;
@@ -31,6 +35,8 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(DocumentRepository::class, DocumentRepositoryEloquent::class);
         $this->app->bind(SessionRepository::class, SessionRepositoryEloquent::class);
         $this->app->bind(PasswordResetRepository::class, PasswordResetRepositoryEloquent::class);
+        $this->app->bind(IngredientRepository::class, IngredientRepositoryEloquent::class);
+        $this->app->bind(BrandRepository::class, BrandRepositoryEloquent::class);
 
     }
 

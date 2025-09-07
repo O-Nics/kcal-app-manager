@@ -8,6 +8,7 @@ use App\Features\Customer\Data\DelWaterData;
 use App\Features\Customer\Data\PasswordCustomerData;
 use App\Features\Customer\Data\RegisterCustomerData;
 use App\Features\Customer\Data\WeightCustomerData;
+use App\Features\ProgramPlanner\Nutrition\Domain\ProgramPlan;
 use App\Features\ProgramPlanner\Nutrition\Domain\ProgramRequest;
 use App\Features\ProgramPlanner\Nutrition\Policy\PolicyProvider;
 use App\Features\ProgramPlanner\ProgramPlanner;
@@ -889,12 +890,12 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
 
     }
 
-//    public function planAndAddToCustomerV1(CreateProgramData $createProgramData, Customer $customer): Customer
+//    public function planAndAddToCustomerV1(ProgramPlan $prg1, CreateProgramData $createProgramData, Customer $customer): Customer
 //    {
 //        // LEGACY v1 path — keep old behavior
 //        $planner = new \App\Features\Customer\Services\OldProgramPlanner();
 //        $program = $planner->build($createProgramData);
-//        dd($program);
+//        dd($program, $prg1);
 //        $customer->gender = $createProgramData->gender;
 //
 //        if (Goal::query()->find($createProgramData->goalId)) {
@@ -970,6 +971,7 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
         );
 
         $program = $planner->plan($request);
+
 
         $customer->gender = $createProgramData->gender;
 

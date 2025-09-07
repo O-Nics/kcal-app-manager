@@ -2,6 +2,7 @@
 
 namespace App\Support\Ensure;
 
+use App\Models\Brand;
 use App\Models\Customer;
 use App\Models\Ingredient;
 use App\Models\Recipe;
@@ -9,13 +10,23 @@ use App\Models\User;
 
 class EnsureCustomer {
 
-    public function userCanManageCustomer(User $user, Customer $customer): bool {
+    public function userCanManageCustomer(?User $user, Customer $customer): bool {
+        $user = $user ?? auth()->user();
         if($user->customers()->where('id', $customer->id)->exists()) {
             return true;
         }
         else{
             abort(401, "Action non autorisée");
         }
+    }
+
+    public function customerCanManageBrand(Customer $customer, Brand $brand): bool {
+
+        if($brand->customer_id === $customer->id && !$brand->is_verified) {
+            return true;
+        }
+
+        abort(401, "Action non autorisée");
     }
 
 //    public function CustomerCanManageIngredient(Customer $customer, Ingredient $ingredient): bool {

@@ -3,6 +3,7 @@
 namespace App\Support\Repositories\Ingredient;
 
 use App\Features\Food\Data\AddBrandData;
+use App\Features\Food\Data\IngredientData;
 use App\Models\Brand;
 use App\Models\Customer;
 use App\Models\Ingredient;
@@ -11,9 +12,10 @@ use Throwable;
 
 interface IngredientRepository
 {
-    /**
-     * @throws Throwable
-     */
 
+    public function createIngredient(IngredientData $ingredientData, ?Customer $customer = null): Ingredient;
 
+    public function updateIngredient(IngredientData $ingredientData, Ingredient $ingredient): Ingredient;
+
+    public function deleteIngredient(Ingredient $ingredient): void;
 }

@@ -17,7 +17,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             MealTypesTableSeeder::class,
             GoalTableSeeder::class,
-            ActivityLevelTableSeeder::class
+            ActivityLevelTableSeeder::class,
+            IngredientTypeTableSeeder::class
         ]);
 
 

@@ -22,14 +22,14 @@ return new class extends Migration
             $table->foreignId('image_id')->nullable()->constrained('documents')->nullOnDelete();
 
 
+            $table->longText('conservation_conditions')->nullable();
             $table->string('name');
+
 
             $table->string('product_quantity_unit');
             $table->string('barcode')->nullable();
 
             $table->integer('reference_value')->default(100); // 100g ou 100ml`
-
-            $table->longText('conservation_conditions')->nullable();
 
             $table->double('product_quantity')->nullable();
             $table->double('energy_kcal100g');

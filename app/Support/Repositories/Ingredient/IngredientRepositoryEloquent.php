@@ -44,22 +44,19 @@ class IngredientRepositoryEloquent extends BaseRepository implements IngredientR
 
         $ingredient->save();
 
-//        dd(is_array($payload['brand_ids']));
         if (array_key_exists('brand_ids', $payload) && is_array($payload['brand_ids'])) {
             foreach ($payload['brand_ids'] as $brandId) {
                 $brand = Brand::find($brandId);
                 if($brand) $ingredient->brands()->syncWithoutDetaching($brand);
             }
         }
-
         if($ingredientData->file != null){
             if($ingredient->image != null){
                 $this->documentRepository->delete($ingredient->image);
             }
-            // Wrap single ImageData into a DataCollection as expected by DocumentRepository::store
-            $files = DataCollection::collect(ImageData::class, [$ingredientData->file]);
-            $this->documentRepository->store($files, $ingredient, 'cover');
+            $this->documentRepository->store([$ingredientData->file], $ingredient, 'cover');
         }
+
 
         return $ingredient->refresh();
     }

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->boolean('is_verified')->default(false);
-
+            $table->string('name_norm')->unique(); // nouvelle colonne
             $table->foreignUuid('customer_id')->nullable()->constrained('customers')->nullOnDelete();
             $table->softDeletes();
             $table->timestamps();

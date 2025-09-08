@@ -10,7 +10,7 @@ use Spatie\LaravelData\DataCollection;
 
 interface DocumentRepository
 {
-    public function store(DataCollection $files, Documentable $documentable): Collection;
+    public function store(array $files, Documentable $documentable,?string $collection = null, ?string $private = null): Collection;
     public function delete(Document $document): void;
 
 }

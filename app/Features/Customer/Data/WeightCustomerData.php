@@ -26,9 +26,9 @@ class WeightCustomerData extends Data
     #[Required]
     public int $weight;
 
+    /** @var ImageData[]|null */
     #[Nullable]
-    #[DataCollectionOf(ImageData::class)]
-    public DataCollection $files;
+    public ?array $files;
 
     #[Nullable]
     public ?float $waist;

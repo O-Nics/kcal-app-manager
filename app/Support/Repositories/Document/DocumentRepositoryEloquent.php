@@ -26,11 +26,12 @@ class DocumentRepositoryEloquent extends BaseRepository implements DocumentRepos
      * @throws ImagickException
      * @throws Throwable
      */
-    public function store(DataCollection $files, Documentable $documentable, ?string $collection = null, ?string $private = null): Collection
+    public function store(array $files, Documentable $documentable, ?string $collection = null, ?string $private = null): Collection
     {
         $documents = collect();
 
            foreach ($files as $fileData) {
+               /** @var UploadedFile $file */
                $file = $fileData->file; // Illuminate\Http\UploadedFile
 
                $name = $file->getClientOriginalName();

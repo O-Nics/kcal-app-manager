@@ -56,6 +56,7 @@ final readonly class DefaultProgramEngine implements ProgramEngine
 
     public function computeTdee(float $bmr, int $activityLevelId): float
     {
+
         return $bmr * $this->policy->palFor($activityLevelId);
     }
 
@@ -170,7 +171,7 @@ final readonly class DefaultProgramEngine implements ProgramEngine
     {
         $minByRatio = (int) round($tdee * $this->policy->minTdeeRatio());
         $minAbs     = $this->policy->minDailyKcalAbs($sex);
-        return max($candidateDaily, max($minByRatio, $minAbs));
+        return max($candidateDaily, $minByRatio, $minAbs);
     }
 
     // ---------------- Macros & distribution ----------------

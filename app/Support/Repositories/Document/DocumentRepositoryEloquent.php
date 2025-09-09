@@ -9,9 +9,11 @@ use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Imagick;
 use ImagickException;
+use Intervention\Gif\Exceptions\NotReadableException;
 use Intervention\Image\Drivers\Imagick\Driver;
 use Intervention\Image\Image;
 use Intervention\Image\ImageManager;
@@ -148,4 +150,77 @@ class DocumentRepositoryEloquent extends BaseRepository implements DocumentRepos
     {
        $document->delete();
     }
+
+
+    public function downloadImage(string $url): ?UploadedFile
+    {
+        try {
+            // Télécharger l'image avec un User-Agent explicite (OFF rejette souvent sans UA)
+            $response = Http::withHeaders([
+                    'User-Agent' => 'kcal-app/1.0 (+https://example.com)',
+                    'Accept' => 'image/*',
+                ])
+                ->timeout(15)
+                ->retry(2, 200)
+                ->get($url);
+
+            if (! $response->successful()) {
+                dump('Téléchargement impossible: HTTP ' . $response->status());
+                return null;
+            }
+
+            // Vérifications taille & type MIME
+            $contentType = $response->header('Content-Type');
+            $contentLength = $response->header('Content-Length');
+            if (is_array($contentLength)) { $contentLength = end($contentLength); }
+            if ($contentLength !== null && (int)$contentLength > 5 * 1024 * 1024) {
+                dump('Image trop grande pour être téléchargée.');
+                return null;
+            }
+            if (! $contentType || ! str_starts_with(strtolower($contentType), 'image/')) {
+                dump("Le fichier n'est pas une image valide. Type MIME : " . ($contentType ?? 'inconnu'));
+                return null;
+            }
+
+            $binary = $response->body();
+            if ($binary === '' || $binary === null) {
+                dump('Réponse vide.');
+                return null;
+            }
+
+            // Intervention v3 : lire depuis le binaire (certains serveurs refusent l'URL directe)
+            $manager = new ImageManager(new Driver());
+            $image = $manager->read($binary)
+                ->orient()
+                ->scaleDown(1000, 1000);
+
+            // Sauvegarde temporaire encodée (JPEG 70)
+            $tempPath = tempnam(sys_get_temp_dir(), 'image_');
+            $encoded = $image->toJpeg(70);
+            $encoded->save($tempPath);
+
+            // Nom de fichier d'origine (si dispo), sinon défaut
+            $basename = basename(parse_url($url, PHP_URL_PATH)) ?: 'image.jpg';
+            if (! str_ends_with(strtolower($basename), '.jpg') && ! str_ends_with(strtolower($basename), '.jpeg')) {
+                // Harmoniser l'extension au format encodé
+                $basename = pathinfo($basename, PATHINFO_FILENAME) . '.jpg';
+            }
+
+            return new UploadedFile(
+                $tempPath,
+                $basename,
+                'image/jpeg',
+                null,
+                true
+            );
+
+        } catch (NotReadableException $e) {
+            dump('Image non lisible : ' . $e->getMessage());
+        } catch (\Exception $e) {
+            dump('Erreur inattendue : ' . $e->getMessage());
+        }
+
+        return null;
+    }
+
 }

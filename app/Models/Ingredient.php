@@ -23,8 +23,8 @@ use Illuminate\Support\Carbon;
  * @property string $product_quantity_unit
  * @property string|null $barcode
  * @property int $reference_value
- * @property string|null $conservation_conditions
- * @property array|null $ingredients
+ * @property array|null $nutriscore
+ * @property array|null $environmental_score
  *
  * @property float|null $product_quantity
  * @property float|null $energy_kcal100g
@@ -112,13 +112,14 @@ class Ingredient extends Model implements Documentable
         'ingredient_type_id',
         'image_id',
         'name',
+        'nutriscore',
+        'environmental_score',
         'product_quantity_unit',
         'product_quantity',
         'energy_kcal100g',
         'energy_kj100g',
         'barcode',
         'reference_value',
-        'conservation_conditions',
         'ingredients',
 
         // Macro & énergie
@@ -199,7 +200,8 @@ class Ingredient extends Model implements Documentable
 
     protected $casts = [
         'verified' => 'boolean',
-        'ingredients' => 'array',
+        'nutriscore' => 'array',
+        'environmental_score' => 'array',
         'reference_value' => 'integer',
 
         // macro & énergie

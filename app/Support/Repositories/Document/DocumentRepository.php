@@ -12,5 +12,7 @@ interface DocumentRepository
 {
     public function store(array $files, Documentable $documentable,?string $collection = null, ?string $private = null): Collection;
     public function delete(Document $document): void;
+    public function downloadImage(string $url): ?UploadedFile;
+
 
 }

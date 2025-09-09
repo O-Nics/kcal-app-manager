@@ -22,7 +22,6 @@ return new class extends Migration
             $table->foreignId('image_id')->nullable()->constrained('documents')->nullOnDelete();
 
 
-            $table->longText('conservation_conditions')->nullable();
             $table->string('name');
 
 
@@ -108,7 +107,8 @@ return new class extends Migration
             $table->double('alcohol')->nullable();
             $table->double('caffeine')->nullable();
 
-            $table->json('ingredients')->nullable();
+            $table->json('nutriscore')->nullable();
+            $table->json('environmental_score')->nullable();
 
 
             $table->timestamps();

@@ -13,36 +13,38 @@ class IngredientTypeTableSeeder extends Seeder
     public function run(): void
     {
         $types = [
-            'Fruits',
-            'Légumes',
-            'Céréales',
-            'Légumineuses',
-            'Viandes',
-            'Poissons et fruits de mer',
-            'Œufs',
-            'Produits laitiers',
-            'Huiles et matières grasses',
-            'Noix et graines',
-            'Herbes et épices',
-            'Boissons',
-            'Pâtisserie et boulangerie',
-            'Sauces et condiments',
-            'Produits sucrés',
-            'Plats préparés',
-            'Fruits secs',
-            'Conserves et bocaux',
-            'Épicerie salée',
-            'Substituts végétaux',
+            1 => 'Fruits',
+            2 => 'Légumes',
+            3 => 'Céréales',
+            4 => 'Légumineuses',
+            5 => 'Viandes',
+            6 => 'Poissons et fruits de mer',
+            7 => 'Œufs',
+            8 => 'Produits laitiers',
+            9 => 'Huiles et matières grasses',
+            10 => 'Noix et graines',
+            11 => 'Herbes et épices',
+            12 => 'Boissons',
+            13 => 'Pâtisserie et boulangerie',
+            14 => 'Sauces et condiments',
+            15 => 'Produits sucrés',
+            16 => 'Plats préparés',
+            17 => 'Fruits secs',
+            18 => 'Conserves et bocaux',
+            19 => 'Épicerie salée',
+            20 => 'Substituts végétaux',
+            21 => 'Divers',
         ];
 
         $now = now();
-        $rows = array_map(fn ($name) => [
+        $rows = array_map(fn ($code, $name) => [
+            'code' => $code,
             'name' => $name,
             'created_at' => $now,
             'updated_at' => $now,
-        ], $types);
+        ], array_keys($types), $types);
 
-        DB::table('ingredient_types')->upsert($rows, ['name'], ['updated_at']);
+        DB::table('ingredient_types')->upsert($rows, ['code', 'name'], ['updated_at']);
 
         dump(count($types) . ' ingredient types processed (inserted/updated).');
     }

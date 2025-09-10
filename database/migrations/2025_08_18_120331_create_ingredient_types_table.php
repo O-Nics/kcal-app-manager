@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('ingredient_types', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->foreignId('image_id')->nullable()->constrained('documents')->nullOnDelete();
+            $table->integer('code');
             $table->timestamps();
         });
     }

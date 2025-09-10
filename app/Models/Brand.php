@@ -16,7 +16,7 @@ class Brand extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'is_verified', 'customer_id'];
+    protected $fillable = ['name', 'is_verified', 'customer_id','name_norm'];
 
 
     public function customer(): \Illuminate\Database\Eloquent\Relations\BelongsTo

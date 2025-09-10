@@ -119,8 +119,6 @@ class Ingredient extends Model implements Documentable
         'energy_kcal100g',
         'energy_kj100g',
         'barcode',
-        'reference_value',
-        'ingredients',
 
         // Macro & énergie
         'fat',
@@ -202,7 +200,6 @@ class Ingredient extends Model implements Documentable
         'verified' => 'boolean',
         'nutriscore' => 'array',
         'environmental_score' => 'array',
-        'reference_value' => 'integer',
 
         // macro & énergie
         'product_quantity' => 'float',

@@ -14,24 +14,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $description
  * @property int|null $image_id
  */
-class IngredientType extends Model implements Documentable
+class IngredientType extends Model
 {
-    use DocumentTrait, HasFactory;
+    use HasFactory;
 
     protected $fillable = [
         'name',
-        'description',
-        'image_id',
+        'code',
     ];
 
     public function storagePath(): string
     {
         return 'ingredient_types/' . $this->id;
 
-    }
-
-    public function image(): BelongsTo
-    {
-        return $this->belongsTo(Document::class, 'image_id');
     }
 }

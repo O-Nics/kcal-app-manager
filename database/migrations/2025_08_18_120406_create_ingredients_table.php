@@ -28,7 +28,6 @@ return new class extends Migration
             $table->string('product_quantity_unit');
             $table->string('barcode')->nullable();
 
-            $table->integer('reference_value')->default(100); // 100g ou 100ml`
 
             $table->double('product_quantity')->nullable();
             $table->double('energy_kcal100g');
@@ -109,6 +108,7 @@ return new class extends Migration
 
             $table->json('nutriscore')->nullable();
             $table->json('environmental_score')->nullable();
+
 
 
             $table->timestamps();

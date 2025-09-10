@@ -21,4 +21,11 @@ class UpdateWeightUnitData extends Data
     #[Required]
     public string $weightUnit;
 
+
+    public function __construct(string $weightUnit)
+    {
+        $this->weightUnit = $weightUnit;
+    }
+
+
 }

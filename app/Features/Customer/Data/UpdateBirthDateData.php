@@ -20,6 +20,11 @@ class UpdateBirthDateData extends Data
 {
     #[Required]
     #[WithCast(DateTimeInterfaceCast::class, format: 'd-m-Y')]
-    public ?Carbon $birthDate;
+    public Carbon $birthDate;
+
+    public function __construct(?Carbon $birthDate)
+    {
+        $this->birthDate = $birthDate;
+    }
 
 }

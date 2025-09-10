@@ -22,5 +22,9 @@ class UpdateTargetOrStartWeightData extends Data
     #[Required]
     public float $weight;
 
+    public function __construct(float $weight)
+    {
+        $this->weight = $weight;
+    }
 
 }

@@ -22,4 +22,8 @@ class UpdateStepsData extends Data
     #[Required]
     public int $steps;
 
+    public function __construct(int $steps)
+    {
+        $this->steps = $steps;
+    }
 }

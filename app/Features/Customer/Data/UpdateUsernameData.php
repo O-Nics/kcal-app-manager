@@ -21,4 +21,9 @@ class UpdateUsernameData extends Data
     #[Required]
     public string $username;
 
+    public function __construct(string $username)
+    {
+        $this->username = $username;
+    }
+
 }

@@ -17,8 +17,6 @@ Route::prefix('auth')->group(function () {
 
     Route::middleware(['auth:sanctum', 'ability:' . TokenAbility::REFRESH_TOKEN->value, ])->group(function () {
         Route::post('refresh-token', [AuthController::class, 'refreshToken']);
-        Route::post('revoke-token', [AuthController::class, 'revokeDevicesToken']);
-
     });
 
 });

@@ -21,4 +21,9 @@ class UpdateHeightData extends Data
     #[Required]
     public float $height;
 
+    public function __construct(float $height)
+    {
+        $this->height = $height;
+    }
+
 }

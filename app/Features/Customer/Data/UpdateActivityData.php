@@ -22,4 +22,9 @@ class UpdateActivityData extends Data
     #[Required, Exists('activity_levels', 'id')]
     public int $activityId;
 
+    public function __construct(int $activityId)
+    {
+        $this->activityId = $activityId;
+    }
+
 }

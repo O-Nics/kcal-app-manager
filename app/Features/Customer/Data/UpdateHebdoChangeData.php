@@ -22,5 +22,10 @@ class UpdateHebdoChangeData extends Data
     #[Required]
     public float $hebdoChange;
 
+    public function __construct(float $hebdoChange)
+    {
+        $this->hebdoChange = $hebdoChange;
+    }
+
 
 }

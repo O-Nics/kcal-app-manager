@@ -28,5 +28,12 @@ class UpdateNutritionData extends Data
     #[Required]
     public int $fat;
 
+    public function __construct(int $protein, int $carbs, int $fat)
+    {
+        $this->protein = $protein;
+        $this->carbs = $carbs;
+        $this->fat = $fat;
+    }
+
 
 }

@@ -18,7 +18,7 @@ class AppController extends Controller {
 
 
 
-    public function checkAvailability(): JsonResponse {
+    public function availability(): JsonResponse {
 
         return response()->json([
             'available' => true
@@ -26,7 +26,7 @@ class AppController extends Controller {
 
     }
 
-    public function loadInitialData(): JsonResponse
+    public function initialData(): JsonResponse
     {
 
         return response()->json([

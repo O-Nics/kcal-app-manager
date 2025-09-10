@@ -22,4 +22,9 @@ class UpdateWaterVolumeData extends Data
     #[Required]
     public int $volume;
 
+    public function __construct(int $volume)
+    {
+        $this->volume = $volume;
+    }
+
 }

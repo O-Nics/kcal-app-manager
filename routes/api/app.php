@@ -7,6 +7,6 @@ use App\Support\Enums\TokenAbility;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('app')->group(function () {
-    Route::get('load-initial-data', [AppController::class, 'loadInitialData']);
-    Route::get('check-availability', [AppController::class, 'checkAvailability']);
+    Route::get('initial-data', [AppController::class, 'initialData']);
+    Route::get('availability', [AppController::class, 'availability']);
 });

@@ -21,4 +21,9 @@ class UpdateHeightUnitData extends Data
     #[Required]
     public string $heightUnit;
 
+    public function __construct(string $heightUnit)
+    {
+        $this->heightUnit = $heightUnit;
+    }
 }
+

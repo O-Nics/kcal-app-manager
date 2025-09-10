@@ -21,4 +21,9 @@ class UpdateGenderData extends Data
     #[Required]
     public string $gender;
 
+    public function __construct(string $gender)
+    {
+        $this->gender = $gender;
+    }
+
 }

@@ -22,5 +22,8 @@ class UpdateKcalData extends Data
     #[Required]
     public int $kcal;
 
-
+    public function __construct(int $kcal)
+    {
+        $this->kcal = $kcal;
+    }
 }

@@ -95,6 +95,70 @@ class IngredientController extends Controller {
 
     }
 
+    public function searchIngredientByBarCode(Customer $customer, ?string $customerId): JsonResponse
+    {
+        try {
+            /** @var User $user */
+            $user = auth()->user();
+            $customer = $this->customerRepository->findCustomerById($customerId);
+
+            $request->validate([
+                'barcode' => 'required|string|max:255',
+            ]);
+
+            $barcode = $request->query('barcode');
+
+            // Vérification de la validité du code-barres
+            if (!$this->ingredientRepository->isBarcode($barcode)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Code barre invalide',
+                ], 400); // 400 pour une mauvaise requête
+            }
+
+            // Recherche de l'ingrédient dans la base de données
+            $ingredient = $this->ingredientRepository->findIngredientByBarCode($barcode);
+
+            if ($ingredient) {
+                return response()->json([
+                    'success' => true,
+                    'ingredient' => new IngredientResource($ingredient, $customer, false),
+                ]);
+            }
+
+            // Recherche via OpenFoodFacts
+            $externalIngredient = OpenFoodFacts::barcode($barcode);
+
+            if ($externalIngredient) {
+                $createdIngredient = $this->ingredientRepository->createOneIngredientFromOpenFoodFact($externalIngredient);
+
+                return response()->json([
+                    'success' => true,
+                    'ingredient' => new IngredientResource($createdIngredient, $customer, false),
+                ]);
+            }
+
+            // Si aucun ingrédient trouvé
+            return response()->json([
+                'success' => false,
+                'message' => 'Aliment non trouvé',
+            ], 404);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Données invalides.',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Une erreur interne est survenue.',
+            ], 500);
+        }
+    }
+
+
 
 
 }

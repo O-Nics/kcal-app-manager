@@ -23,4 +23,9 @@ class UpdateGoalData extends Data
     #[Required, Exists('goals', 'id')]
     public int $goalId;
 
+    public function __construct(int $goalId)
+    {
+        $this->goalId = $goalId;
+    }
+
 }

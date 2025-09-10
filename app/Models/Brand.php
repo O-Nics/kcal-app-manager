@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 /**
  * * @property int $id
  * * @property string $name
+ * * @property string $name_norm
  * * @property bool $is_verified
  * * @property string $customer_id
  * * @property-read  Customer $customer
@@ -27,6 +29,11 @@ class Brand extends Model
     public function ingredients(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
         return $this->belongsToMany(Ingredient::class, 'brand_ingredient');
+    }
+
+    public static function makeNameNorm($brandName): string
+    {
+        return (string) Str::of($brandName)->lower()->ascii()->trim();
     }
     //
 }

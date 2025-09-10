@@ -28,7 +28,7 @@ class GetBrandsFromOpenFoodFactJob implements ShouldQueue
         $seen = [];
 
         foreach ($this->streamBrandNames() as $brandName) {
-            $key = (string) Str::of($brandName)->lower()->ascii()->trim();
+            $key = Brand::makeNameNorm($brandName);
             if ($key === '' || isset($seen[$key])) {
                 continue; // skip duplicates and empties
             }

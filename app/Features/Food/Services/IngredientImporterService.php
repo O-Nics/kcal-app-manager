@@ -323,7 +323,7 @@ use Illuminate\Support\Str;
             foreach ($brands as $brandName) {
                 $name = trim((string)$brandName);
                 if ($name === '') continue;
-                $key = (string) Str::of($name)->lower()->ascii()->trim();
+                $key = (string) Brand::makeNameNorm($brandName);
                 $normalized[$key] = $name; // keep original casing for display
             }
 

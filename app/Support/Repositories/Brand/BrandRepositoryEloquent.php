@@ -21,6 +21,7 @@ class BrandRepositoryEloquent extends BaseRepository implements BrandRepository 
         if(!$brand) {
             $brand = new Brand();
             $brand->name = $addBrandData->name;
+            $brand->name_norm = Brand::makeNameNorm($addBrandData->name);
             $brand->is_verified = false;
             $brand->customer_id = $customer->id;
             $brand->save();

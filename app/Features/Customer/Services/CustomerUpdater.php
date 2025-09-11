@@ -12,6 +12,7 @@ use App\Features\Customer\Data\UpdateHebdoChangeData;
 use App\Features\Customer\Data\UpdateHeightData;
 use App\Features\Customer\Data\UpdateHeightUnitData;
 use App\Features\Customer\Data\UpdateKcalData;
+use App\Features\Customer\Data\UpdateNotificationData;
 use App\Features\Customer\Data\UpdateNutritionData;
 use App\Features\Customer\Data\UpdateStepsData;
 use App\Features\Customer\Data\UpdateTargetOrStartWeightData;
@@ -20,6 +21,7 @@ use App\Features\Customer\Data\UpdateWaterVolumeData;
 use App\Features\Customer\Data\UpdateWeightUnitData;
 use App\Models\Customer;
 use App\Support\Repositories\Customer\CustomerRepository;
+use Illuminate\Http\JsonResponse;
 
 #[AllowDynamicProperties] class CustomerUpdater
 {
@@ -143,5 +145,10 @@ use App\Support\Repositories\Customer\CustomerRepository;
         $createProgramData = CreateProgramData::fromCustomer($customer);
 
         return $this->customerRepository->planAndAddToCustomer($createProgramData, $customer);
+    }
+
+    public function updateNotification(Customer $customer, UpdateNotificationData $updateNotificationData): Customer
+    {
+        return $this->customerRepository->updateNotification($customer, $updateNotificationData->notificationColumn, $updateNotificationData->notificationValue);
     }
 }

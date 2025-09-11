@@ -19,6 +19,6 @@ class CheckPasswordResetData extends Data
     public string $email;
 
     #[Required]
-    public string $password;
+    public string $token;
 
 }

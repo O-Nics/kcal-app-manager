@@ -69,4 +69,11 @@ class IngredientRepositoryEloquent extends BaseRepository implements IngredientR
     }
 
 
+    public function findIngredientByBarCode(string $barcode): ?Ingredient
+    {
+        /** @var Ingredient $ingredient */
+        $ingredient = Ingredient::query()->where('barcode', '=', $barcode)->first();
+
+        return $ingredient;
+    }
 }

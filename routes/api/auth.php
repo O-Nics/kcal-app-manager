@@ -9,10 +9,13 @@ Route::prefix('auth')->group(function () {
 
     Route::post('register', [AuthController::class, 'register']);
     Route::post('login', [AuthController::class, 'login']);
-    Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
-    Route::get('check-password-reset', [AuthController::class, 'checkPasswordReset']);
-    Route::put('reset-password', [AuthController::class, 'resetPassword']);
 
+
+    Route::prefix('password')->group(function () {
+        Route::post('', [AuthController::class, 'forgotPassword']);
+        Route::get('', [AuthController::class, 'checkPasswordReset']);
+        Route::put('', [AuthController::class, 'resetPassword']);
+    });
 
 
     Route::middleware(['auth:sanctum', 'ability:' . TokenAbility::REFRESH_TOKEN->value, ])->group(function () {

@@ -203,12 +203,14 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
     /**
      * @throws Throwable
      */
-    public function updateNotification(Customer $customer, string $column, bool $value): void
+    public function updateNotification(Customer $customer, string $column, bool $value): Customer
     {
         if($customer->$column != $value) {
             $customer->$column = $value;
             $customer->saveOrFail();
         }
+
+        return $customer;
     }
 
     /**

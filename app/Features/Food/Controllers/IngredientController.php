@@ -7,6 +7,8 @@ namespace App\Features\Food\Controllers;
 
 use App\Features\Food\Data\AddBrandData;
 use App\Features\Food\Data\IngredientData;
+use App\Features\Food\Resources\IngredientResource;
+use App\Features\Food\Services\IngredientImporterService;
 use App\Models\Brand;
 use App\Models\Customer;
 use App\Models\Ingredient;
@@ -15,6 +17,7 @@ use App\Support\Abstract\Controller;
 use App\Support\Ensure\EnsureCustomer;
 use App\Support\Repositories\Ingredient\IngredientRepository;
 use Illuminate\Http\JsonResponse;
+use OpenFoodFacts\Laravel\Facades\OpenFoodFacts;
 use Throwable;
 
 class IngredientController extends Controller {
@@ -35,7 +38,7 @@ class IngredientController extends Controller {
         $this->ingredientRepository = $ingredientRepository;
         $this->ensureCustomer = $ensureCustomer;
     }
-    public function getIngredientById(Customer $customer, ?Ingredient $ingredient): JsonResponse
+    public function getIngredient(Customer $customer, ?Ingredient $ingredient): JsonResponse
     {
 
         return response()->json([
@@ -95,67 +98,51 @@ class IngredientController extends Controller {
 
     }
 
-    public function searchIngredientByBarCode(Customer $customer, ?string $customerId): JsonResponse
+    public function getIngredientByBarCode(Customer $customer, string $barcode): JsonResponse
     {
-        try {
-            /** @var User $user */
-            $user = auth()->user();
-            $customer = $this->customerRepository->findCustomerById($customerId);
 
-            $request->validate([
-                'barcode' => 'required|string|max:255',
+        // Vérification de la validité du code-barres
+        if (!Ingredient::isBarcode($barcode)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Code barre invalide',
+            ], 400);
+        }
+
+        // Recherche de l'ingrédient dans la base de données
+        $ingredient = $this->ingredientRepository->findIngredientByBarCode($barcode);
+
+        if ($ingredient) {
+            return response()->json([
+                'success' => true,
+                'ingredient' => new IngredientResource($ingredient, $customer, false),
             ]);
+        }
 
-            $barcode = $request->query('barcode');
+        // Recherche via OpenFoodFacts
+        $externalIngredient = OpenFoodFacts::barcode($barcode);
 
-            // Vérification de la validité du code-barres
-            if (!$this->ingredientRepository->isBarcode($barcode)) {
+        if ($externalIngredient) {
+            $createdIngredient = new IngredientImporterService()->processBatch($externalIngredient);
+
+            if($createdIngredient == null){
                 return response()->json([
                     'success' => false,
-                    'message' => 'Code barre invalide',
-                ], 400); // 400 pour une mauvaise requête
+                    'message' => 'Aliment non trouvé',
+                ], 404);
             }
 
-            // Recherche de l'ingrédient dans la base de données
-            $ingredient = $this->ingredientRepository->findIngredientByBarCode($barcode);
-
-            if ($ingredient) {
-                return response()->json([
-                    'success' => true,
-                    'ingredient' => new IngredientResource($ingredient, $customer, false),
-                ]);
-            }
-
-            // Recherche via OpenFoodFacts
-            $externalIngredient = OpenFoodFacts::barcode($barcode);
-
-            if ($externalIngredient) {
-                $createdIngredient = $this->ingredientRepository->createOneIngredientFromOpenFoodFact($externalIngredient);
-
-                return response()->json([
-                    'success' => true,
-                    'ingredient' => new IngredientResource($createdIngredient, $customer, false),
-                ]);
-            }
-
-            // Si aucun ingrédient trouvé
             return response()->json([
-                'success' => false,
-                'message' => 'Aliment non trouvé',
-            ], 404);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Données invalides.',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Une erreur interne est survenue.',
-            ], 500);
+                'success' => true,
+                'ingredient' => new IngredientResource($createdIngredient, $customer, false),
+            ]);
         }
+
+        // Si aucun ingrédient trouvé
+        return response()->json([
+            'success' => false,
+            'message' => 'Aliment non trouvé',
+        ], 404);
     }
 
 

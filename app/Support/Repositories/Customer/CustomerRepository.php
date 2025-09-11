@@ -22,7 +22,7 @@ interface CustomerRepository
 
     public function storeCustomer(User $user, RegisterCustomerData $registerCustomerData): Customer;
 
-    public function updateNotification(Customer $customer, String $column, bool $value): void;
+    public function updateNotification(Customer $customer, String $column, bool $value): Customer;
 
     public function deleteCustomer(Customer $customer): void;
 

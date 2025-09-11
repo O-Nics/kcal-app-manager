@@ -25,4 +25,10 @@ class UpdateNotificationData extends Data
     #[Required]
     public string $notificationValue;
 
+    public function __construct(string $notificationColumn, string $notificationValue)
+    {
+        $this->notificationColumn = $notificationColumn;
+        $this->notificationValue = $notificationValue;
+    }
+
 }

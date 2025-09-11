@@ -13,15 +13,18 @@ Route::prefix('foods')->group(function () {
         Route::prefix('{customer}')->group(function () {
 
             Route::post('', [IngredientController::class, 'createIngredient']);
+            Route::get('{barcode}', [IngredientController::class, 'getIngredientByBarCode']);
 
             Route::prefix('{ingredient}')->group(function () {
-                Route::get('', [IngredientController::class, 'getIngredientById']);
+                Route::get('', [IngredientController::class, 'getIngredient']);
                 Route::patch('', [IngredientController::class, 'updateIngredient']);
                 Route::delete('', [IngredientController::class, 'deleteIngredient']);
             });
+
         });
 
-        Route::get('get-ingredient-by-barcode', [IngredientController::class, 'getIngredientById']);
+
+
     });
 
     Route::prefix('brands')->group(function () {

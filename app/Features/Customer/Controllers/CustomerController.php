@@ -165,6 +165,8 @@ class CustomerController extends Controller
             case 'updateGender':
                 $customer = $this->customerUpdater->updateGender($customer, new UpdateGenderData(gender: $customerData->gender));
                 break;
+            case 'updateNotification':
+                $customer = $this->customerUpdater->updateNotification($customer, new UpdateNotificationData(notificationColumn: $customerData->notificationColumn, notificationValue: $customerData->notificationValue));
             default:
                 return response()->json([
                     'success' => false,
@@ -191,18 +193,6 @@ class CustomerController extends Controller
         return response()->json([
             'success' => true,
             'customer' => $customer
-        ]);
-    }
-
-    public function updateNotification(Customer $customer, UpdateNotificationData $updateNotificationData): JsonResponse
-    {
-        /** @var User $user */
-        $user = auth()->user();
-
-        $this->ensureCustomer->userCanManageCustomer($user, $customer);
-        $this->customerRepository->updateNotification($customer, $updateNotificationData->notificationColumn, $updateNotificationData->notificationValue);
-        return response()->json([
-            'success' => true,
         ]);
     }
 

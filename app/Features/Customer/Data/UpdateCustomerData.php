@@ -85,4 +85,11 @@ class UpdateCustomerData extends Data
     #[Nullable, Exists('activity_levels', 'id')]
     public ?int $activityId;
 
+
+    #[Nullable]
+    public string $notificationColumn;
+
+    #[Nullable]
+    public string $notificationValue;
+
 }

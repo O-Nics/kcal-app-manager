@@ -125,7 +125,7 @@ class AuthController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => "L'email ou le mot de passe est incorrect.",
-            ], 401); 
+            ], 401);
 
         } catch (Throwable $e) {
             return response()->json([
@@ -230,7 +230,7 @@ class AuthController extends Controller
 
     public function checkPasswordReset(CheckPasswordResetData $checkPasswordResetData): JsonResponse
     {
-        $passwordReset = $this->passwordResetRepository->findByEmailAndToken($checkPasswordResetData->email, $checkPasswordResetData->password);
+        $passwordReset = $this->passwordResetRepository->findByEmailAndToken($checkPasswordResetData->email, $checkPasswordResetData->token);
         if($passwordReset) {
             if($passwordReset->isExpired()) {
                 return response()->json([

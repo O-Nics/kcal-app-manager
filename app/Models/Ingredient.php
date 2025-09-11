@@ -312,4 +312,9 @@ class Ingredient extends Model implements Documentable
             ->withPivot('quantity', 'unit')
             ->withTimestamps();
     }
+
+    public static function isBarcode(string $input): bool
+    {
+        return ctype_digit($input);
+    }
 }

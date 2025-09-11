@@ -8,6 +8,7 @@ use App\Models\Ingredient;
 use App\Models\IngredientType;
 use App\Support\Data\ImageData;
 use App\Support\Repositories\Document\DocumentRepository;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 #[AllowDynamicProperties] class IngredientImporterService
@@ -71,14 +72,14 @@ use Illuminate\Support\Str;
     }
 
 
-    public function processBatch(mixed $product): void
+    public function processBatch(mixed $product): ?Ingredient
     {
         $brandsToSync = [];
         $now = now();
 
             $productCode = $product['code'] ?? $product['_id'] ?? null;
             if ($productCode === null) {
-                return;
+                return null;
             }
 
             // --- Pré-lecture nutriments + filtres d'éligibilité ---
@@ -87,12 +88,12 @@ use Illuminate\Support\Str;
 
             $name = $this->getProductName($product);
             if ($name === null) {
-                return;
+                return null;
             }
 
 
             if (!isset($nutriments['energy-kcal_100g']) || $nutriments['energy-kcal_100g'] <= 0) {
-                return;
+                return null;
             }
 
             // --- BARCODE ---
@@ -242,6 +243,8 @@ use Illuminate\Support\Str;
             if ($awsUrl = $this->generateAwsImageUrl($productCode)) {
                 $this->attachImageFromAws($ingredient, $awsUrl);
             }
+            $ingredient->refresh();
+            return $ingredient;
 
 
         // Sync marques
@@ -298,11 +301,10 @@ use Illuminate\Support\Str;
 //                    $ingredient->unsearchable();
 //                    $ingredient->refresh();
 //                    $ingredient->searchable();
-                    dump("Image attachée pour l'ingrédient {$ingredient->name}.");
                 }
             }
         } catch (\Exception $e) {
-            dump("Exception lors de l'attachement de l'image : {$e->getMessage()} pour l'ingrédient {$ingredient->name}.");
+            Log::error("Failed to attach image from AWS for ingredient ID {$ingredient->id} {$imageUrl} " . $e->getMessage());
         }
     }
 
@@ -311,7 +313,6 @@ use Illuminate\Support\Str;
      */
     private function syncBrands(array $brandsToSync): void
     {
-        dump('brand : ' . count($brandsToSync) . json_encode($brandsToSync));
         foreach ($brandsToSync as $ingredientId => $brands) {
             $ingredient = Ingredient::find($ingredientId);
             if (!$ingredient) {

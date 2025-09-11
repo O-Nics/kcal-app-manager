@@ -18,4 +18,7 @@ interface IngredientRepository
     public function updateIngredient(IngredientData $ingredientData, Ingredient $ingredient): Ingredient;
 
     public function deleteIngredient(Ingredient $ingredient): void;
+
+    public function findIngredientByBarCode(string $barcode): ?Ingredient;
+
 }

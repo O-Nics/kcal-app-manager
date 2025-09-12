@@ -145,6 +145,23 @@ class IngredientController extends Controller {
         ], 404);
     }
 
+    public function handleFavorite(Customer $customer , Ingredient $ingredient): JsonResponse
+    {
+
+        if($this->ingredientRepository->hasFavorite($ingredient, $customer)){
+            $this->ingredientRepository->deleteFavorite($ingredient, $customer);
+        } else {
+            $this->ingredientRepository->addFavorite($ingredient, $customer);
+        }
+
+        return response()->json([
+            'success' => true,
+            'ingredient' => new IngredientResource($ingredient, $customer, false),
+        ]);
+
+
+    }
+
 
 
 

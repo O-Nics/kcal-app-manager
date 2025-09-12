@@ -21,4 +21,10 @@ interface IngredientRepository
 
     public function findIngredientByBarCode(string $barcode): ?Ingredient;
 
+    public function addFavorite(Ingredient $ingredient, Customer $customer): void;
+
+    public function deleteFavorite(Ingredient $ingredient, Customer $customer): void;
+
+    public function hasFavorite(Ingredient $ingredient, Customer $customer): bool;
+
 }

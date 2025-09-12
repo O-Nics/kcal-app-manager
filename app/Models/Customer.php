@@ -179,5 +179,10 @@ class Customer extends Model implements Documentable
             ->toArray();
     }
 
+    public function ingredientFavorites()
+    {
+        return $this->morphedByMany(Ingredient::class, 'favoriteable', 'favorites');
+    }
+
 
 }

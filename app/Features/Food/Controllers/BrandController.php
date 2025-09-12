@@ -6,9 +6,11 @@ namespace App\Features\Food\Controllers;
 
 
 use App\Features\Food\Data\AddBrandData;
+use App\Http\Resources\Collections\BrandCollection;
 use App\Models\Brand;
 use App\Models\Customer;
 use App\Models\Ingredient;
+use App\Models\User;
 use App\Support\Abstract\Controller;
 use App\Support\Ensure\EnsureCustomer;
 use App\Support\Repositories\Brand\BrandRepository;
@@ -37,6 +39,29 @@ class BrandController extends Controller {
      */
 
 
+    public function getBrands(Customer $customer): JsonResponse
+    {
+        $brands = Brand::query()
+            ->withCount('ingredients')
+            ->orderByRaw(
+                'CASE
+            WHEN customer_id = ? THEN 2
+            WHEN customer_id IS NULL THEN 1
+            ELSE 0
+        END DESC',
+                [$customer->id]
+            )
+            ->orderByDesc('ingredients_count')
+            ->orderBy('name')
+            ->paginate(100);
+
+        return response()->json([
+            'success' => true,
+            'brands' => new BrandCollection($brands,$customer),
+        ]);
+    }
+
+
     public function addBrand(Customer $customer, AddBrandData $addBrandData): JsonResponse
     {
 
@@ -44,8 +69,7 @@ class BrandController extends Controller {
 
         return response()->json([
             'success' => true,
-            'brand' => $brand
-//            'brand' => new BrandsResource($brand,$customer),
+            'brand' => new BrandsResource($brand,$customer),
         ]);
 
     }

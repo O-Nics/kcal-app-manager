@@ -19,16 +19,16 @@ Route::prefix('foods')->group(function () {
                 Route::get('', [IngredientController::class, 'getIngredient']);
                 Route::patch('', [IngredientController::class, 'updateIngredient']);
                 Route::delete('', [IngredientController::class, 'deleteIngredient']);
+
+                Route::post('favorite', [IngredientController::class, 'handleFavorite']);
             });
 
         });
-
-
-
     });
 
     Route::prefix('brands')->group(function () {
         Route::prefix('{customer}')->group(function () {
+            Route::get('', [BrandController::class, 'getBrands']);
             Route::post('', [BrandController::class, 'addBrand']);
             Route::delete('{brand}', [BrandController::class, 'deleteBrand']);
         });

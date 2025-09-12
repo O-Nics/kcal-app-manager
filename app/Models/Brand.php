@@ -28,7 +28,7 @@ class Brand extends Model
 
     public function ingredients(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
-        return $this->belongsToMany(Ingredient::class, 'brand_ingredient');
+        return $this->belongsToMany(Ingredient::class, 'brand_ingredients');
     }
 
     public static function makeNameNorm($brandName): string

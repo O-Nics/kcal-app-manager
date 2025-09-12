@@ -76,4 +76,19 @@ class IngredientRepositoryEloquent extends BaseRepository implements IngredientR
 
         return $ingredient;
     }
+
+    public function addFavorite(Ingredient $ingredient, Customer $customer): void
+    {
+        $customer->ingredientFavorites()->attach($ingredient);
+    }
+
+    public function deleteFavorite(Ingredient $ingredient, Customer $customer): void
+    {
+        $customer->ingredientFavorites()->detach($ingredient);
+    }
+
+    public function hasFavorite(Ingredient $ingredient, Customer $customer): bool
+    {
+        return $customer->ingredientFavorites()->where('favoriteable_id', $ingredient->id)->exists();
+    }
 }

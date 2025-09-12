@@ -21,10 +21,24 @@ Route::prefix('foods')->group(function () {
                 Route::delete('', [IngredientController::class, 'deleteIngredient']);
 
                 Route::post('favorite', [IngredientController::class, 'handleFavorite']);
+
+                Route::get('favorite', [IngredientController::class, 'getFavoriteIngredients']);
+                Route::get('frequent', [IngredientController::class, 'getFrequentIngredients']);
+                Route::get('created', [IngredientController::class, 'getCreatedIngredients']);
+                Route::get('recent', [IngredientController::class, 'getRecentIngredients']);
             });
 
         });
     });
+    Route::prefix('food')->group(function () {
+        Route::post('add-ingredient-eat', [IngredientController::class, 'addIngredientEat']);
+        Route::patch('update-customer-food', [IngredientController::class, 'updateCustomerFood']);
+        Route::delete('delete-customer-food', [IngredientController::class, 'deleteCustomerFood']);
+        Route::get('get-meal-type-customer-info/{customerId}/{date}/{mealTypeId}', [IngredientController::class, 'getMealTypeCustomerInfo']);
+
+
+    });
+
 
     Route::prefix('brands')->group(function () {
         Route::prefix('{customer}')->group(function () {

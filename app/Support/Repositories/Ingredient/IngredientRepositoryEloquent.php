@@ -6,12 +6,11 @@ use App\Features\Food\Data\IngredientData;
 use App\Models\Brand;
 use App\Models\Customer;
 use App\Models\Ingredient;
-use App\Support\Data\ImageData;
 use App\Support\Helpers\CharHelper;
 use App\Support\Repositories\BaseRepository;
 use App\Support\Repositories\Document\DocumentRepository;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
-use Spatie\LaravelData\DataCollection;
 
 
 class IngredientRepositoryEloquent extends BaseRepository implements IngredientRepository {
@@ -91,4 +90,11 @@ class IngredientRepositoryEloquent extends BaseRepository implements IngredientR
     {
         return $customer->ingredientFavorites()->where('favoriteable_id', $ingredient->id)->exists();
     }
+
+    public function getFavoriteIngredients(Customer $customer): LengthAwarePaginator
+    {
+        return $customer->ingredientFavorites()->paginate(30);
+    }
+
+
 }

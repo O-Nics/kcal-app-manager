@@ -7,6 +7,7 @@ use App\Features\Food\Data\IngredientData;
 use App\Models\Brand;
 use App\Models\Customer;
 use App\Models\Ingredient;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Throwable;
 
@@ -26,5 +27,8 @@ interface IngredientRepository
     public function deleteFavorite(Ingredient $ingredient, Customer $customer): void;
 
     public function hasFavorite(Ingredient $ingredient, Customer $customer): bool;
+
+    public function getFavoriteIngredients(Customer $customer): LengthAwarePaginator;
+
 
 }

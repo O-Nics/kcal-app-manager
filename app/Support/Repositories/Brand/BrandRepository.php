@@ -11,6 +11,7 @@ use App\Support\Repositories\Ingredient\AddPictureIngredientDTO;
 use App\Support\Repositories\Ingredient\DeleteIngredientOrRecipeDTO;
 use App\Support\Repositories\Ingredient\IngredientDTO;
 use App\Support\Repositories\Ingredient\IntelligentResearchIngredientDTO;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Throwable;
 
@@ -20,6 +21,7 @@ interface BrandRepository
      * @throws Throwable
      */
 
+    public function getBrands(Customer $customer): LengthAwarePaginator;
     public function addBrand(AddBrandData $brandDTO, Customer $customer): Brand;
     public function deleteBrand(Brand $brand): void;
 

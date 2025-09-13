@@ -6,6 +6,8 @@ use App\Features\Food\Data\AddBrandData;
 use App\Models\Brand;
 use App\Models\Customer;
 use App\Support\Repositories\BaseRepository;
+use Illuminate\Pagination\LengthAwarePaginator;
+use phpDocumentor\Reflection\Types\This;
 
 
 class BrandRepositoryEloquent extends BaseRepository implements BrandRepository {
@@ -40,5 +42,20 @@ class BrandRepositoryEloquent extends BaseRepository implements BrandRepository 
     }
 
 
-
+    public function getBrands(Customer $customer): LengthAwarePaginator
+    {
+        return $this->query()
+            ->withCount('ingredients')
+            ->orderByRaw(
+                'CASE
+            WHEN customer_id = ? THEN 2
+            WHEN customer_id IS NULL THEN 1
+            ELSE 0
+        END DESC',
+                [$customer->id]
+            )
+            ->orderByDesc('ingredients_count')
+            ->orderBy('name')
+            ->paginate(100);
+    }
 }

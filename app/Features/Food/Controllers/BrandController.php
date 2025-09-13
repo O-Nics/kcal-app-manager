@@ -41,27 +41,24 @@ class BrandController extends Controller {
 
     public function getBrands(Customer $customer): JsonResponse
     {
-        $brands = Brand::query()
-            ->withCount('ingredients')
-            ->orderByRaw(
-                'CASE
-            WHEN customer_id = ? THEN 2
-            WHEN customer_id IS NULL THEN 1
-            ELSE 0
-        END DESC',
-                [$customer->id]
-            )
-            ->orderByDesc('ingredients_count')
-            ->orderBy('name')
-            ->paginate(100);
+
+        $brands = $this->brandRepository->getBrands($customer);
 
         return response()->json([
             'success' => true,
-            'brands' => new BrandCollection($brands,$customer),
+            'last_page' => $brands->lastPage(),
+            'current_page' => $brands->currentPage(),
+            'total' => $brands->total(),
+//            'brands' => BrandsResource::collection($brands->items(),$customer),
+
+//            'brands' => new BrandCollection($brands,$customer),
         ]);
     }
 
 
+    /**
+     * @throws Throwable
+     */
     public function addBrand(Customer $customer, AddBrandData $addBrandData): JsonResponse
     {
 

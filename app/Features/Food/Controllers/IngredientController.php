@@ -163,6 +163,26 @@ class IngredientController extends Controller {
     }
 
 
+    public function getFavoriteIngredients(Customer $customer, string $customerId): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+
+        $this->ensureCustomer->userCanManageCustomer($user, $customer);
+        $favoriteIngredients = $this->ingredientRepository->getFavoriteIngredients($customer);
+
+        return response()->json([
+            'success' => true,
+            'last_page' => $favoriteIngredients->lastPage(),
+            'current_page' => $favoriteIngredients->currentPage(),
+            'total' => $favoriteIngredients->total(),
+            'ingredients' => new IngredientsCollection($favoriteIngredients, $customer),
+        ]);
+
+
+    }
+
+
 
 
 }

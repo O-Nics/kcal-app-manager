@@ -3,16 +3,17 @@
 
 use App\Features\Customer\Controllers\CustomerController;
 use App\Features\Food\Controllers\BrandController;
+use App\Features\Food\Controllers\FoodController;
 use App\Features\Food\Controllers\IngredientController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('foods')->group(function () {
 
     Route::prefix('food/{customer}')->group(function () {
-        Route::post('add-ingredient-eat', [IngredientController::class, 'addIngredientEat']); // à faire
-        Route::patch('update-customer-food', [IngredientController::class, 'updateCustomerFood']); // à faire
-        Route::delete('delete-customer-food', [IngredientController::class, 'deleteCustomerFood']); // à faire
-        Route::get('get-meal-type-customer-info/{customerId}/{date}/{mealTypeId}', [IngredientController::class, 'getMealTypeCustomerInfo']); // à faire
+        Route::post('', [FoodController::class, 'addFood']); // à faire
+        Route::patch('', [FoodController::class, 'updateFood']); // à faire
+        Route::delete('', [FoodController::class, 'deleteFood']); // à faire
+        Route::get('', [FoodController::class, 'getFood']); // à faire
     });
 
     Route::prefix('ingredients/{customer}')->group(function () {

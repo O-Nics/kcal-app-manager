@@ -43,8 +43,8 @@ use Illuminate\Support\Str;
  * @property float|null $volume_water
  * @property float|null $volume_water_by_each
  * @property float|null $obj_proteins
- * @property float|null $obj_lipids
- * @property float|null $obj_glucides
+ * @property float|null $obj_fat
+ * @property float|null $obj_carbs
  * @property bool $is_owner
  * @property bool $profile_locked
  * @property bool $accept_marketing
@@ -92,8 +92,8 @@ class Customer extends Model implements Documentable
         'volume_water',
         'volume_water_by_each',
         'obj_proteins',
-        'obj_lipids',
-        'obj_glucides',
+        'obj_fat',
+        'obj_carbs',
         'user_id',
         'is_owner',
         'profile_locked',

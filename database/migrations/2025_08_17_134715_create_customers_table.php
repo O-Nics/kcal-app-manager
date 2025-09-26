@@ -24,7 +24,6 @@ return new class extends Migration
             $table->string('unique_key',36)->unique();
             $table->string('username')->nullable();
             $table->string('profile_password')->nullable();
-            $table->string('activity')->nullable();
             $table->string('height')->nullable();
             $table->string('type_water')->nullable();
             $table->string('height_unit')->nullable();
@@ -45,8 +44,8 @@ return new class extends Migration
             $table->double('obj_water')->nullable();
             $table->double('volume_water_by_each')->nullable();
             $table->double('obj_proteins')->nullable();// percent
-            $table->double('obj_lipids')->nullable();// percent
-            $table->double('obj_glucides')->nullable(); // percent
+            $table->double('obj_fat')->nullable();// percent
+            $table->double('obj_carbs')->nullable(); // percent
 
             $table->boolean('is_owner')->default(false);
             $table->boolean('profile_locked')->default(false);

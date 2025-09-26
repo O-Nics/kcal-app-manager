@@ -83,8 +83,8 @@ use Illuminate\Http\JsonResponse;
     public function updateNutrition(Customer $customer, UpdateNutritionData $nutritionData): Customer
     {
         $customer = $this->customerRepository->updateOneColumn('obj_proteins', $nutritionData->protein, $customer);
-        $customer = $this->customerRepository->updateOneColumn('obj_lipids', $nutritionData->fat, $customer);
-        return $this->customerRepository->updateOneColumn('obj_glucides', $nutritionData->carbs, $customer);
+        $customer = $this->customerRepository->updateOneColumn('obj_fat', $nutritionData->fat, $customer);
+        return $this->customerRepository->updateOneColumn('obj_carbs', $nutritionData->carbs, $customer);
     }
 
     public function updateSteps(Customer $customer, UpdateStepsData $updateStepsData): Customer

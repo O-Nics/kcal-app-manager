@@ -2,6 +2,7 @@
 
 namespace App\Features\User\Resources;
 
+use App\Features\Customer\Resources\CustomerResource;
 use App\Models\Customer;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -25,19 +26,22 @@ class UserResource extends JsonResource{
 
 
 
-        return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'email' => $this->email,
-            'provider' => $this->provider,
-            'plan' => $this->plan,
-            'limitation_profile' => $this->limitation_profile,
-            'accept_terms' => $this->accept_terms,
-            'email_verified_at' => $this->email_verified_at ? Carbon::parse($this->email_verified_at)->toDateTimeString() : null,
-            'created_at' => Carbon::parse($this->created_at)->toDateTimeString(),
-            'updated_at' => Carbon::parse($this->updated_at)->toDateTimeString(),
-
+        $data = [
+            'id' => $this->resource->id,
+            'name' => $this->resource->name,
+            'email' => $this->resource->email,
+            'provider_id' => $this->resource->provider_id,
+            'provider' => $this->resource->provider,
+            'plan' => $this->resource->plan,
+            'limitation_profile' => (bool) $this->resource->limitation_profile,
+            'accept_terms' => (bool) $this->resource->accept_terms,
+            'email_verified_at' => $this->resource->email_verified_at,
+            'created_at' => $this->resource->created_at,
+            'updated_at' => $this->resource->updated_at,
+            'deleted_at' => $this->resource->deleted_at,
+            'customers' => CustomerResource::collection($this->resource->customers)
         ];
 
+        return $data;
     }
 }

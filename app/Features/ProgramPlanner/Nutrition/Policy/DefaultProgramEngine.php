@@ -78,6 +78,8 @@ final readonly class DefaultProgramEngine implements ProgramEngine
                 25.0
             );
 
+
+
         $capPct = (float) $this->policy->deficitCapPct($bmi, (int) $r->activityLevelId, $r->isRecomp());
 
         [$kcal, $effectiveWeeklyKg, $effectiveWeeklyPct, $maxWeeklyKgByTdee, $capByTdee] =
@@ -178,9 +180,9 @@ final readonly class DefaultProgramEngine implements ProgramEngine
 
     public function planMacros(int $dailyKcal, ProgramRequest $r): array
     {
-        // Protein
+        // Protein - Use DEFAULT instead of min for optimal intake
         $pb   = $this->policy->proteinBoundsGPerKg($r->goal);
-        $pG   = max($pb['min'], min($pb['default'], $pb['max'])) * $r->weight;
+        $pG   = $pb['default'] * $r->weight; // Always use default, not min
         $pKc  = (int) round($pG * 4);
         $pPct = (int) round(($pKc / $dailyKcal) * 100);
         $pPct = min($pPct, (int)$pb['pct_cap']);

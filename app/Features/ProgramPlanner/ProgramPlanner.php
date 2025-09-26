@@ -24,7 +24,6 @@ final readonly class ProgramPlanner
             default                  => [0, ['reason' => 'maintain']],
         };
 
-
         $candidateDaily = (int) round($tdee + $adjKcal);
         $dailyKcal      = $this->engine->clampDailyKcal($tdee, $candidateDaily, $r->sex);
         $macroData      = $this->engine->planMacros($dailyKcal, $r);

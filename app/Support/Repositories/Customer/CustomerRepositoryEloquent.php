@@ -127,8 +127,8 @@ class CustomerRepositoryEloquent extends BaseRepository implements CustomerRepos
         $customer->max_weight_hebdo_change = $program->meta->max_weekly_kg ?? null;
         $customer->time_to_achieve = (int) ($program->duration_days ?? 0);
         $customer->obj_proteins = $program->macro_ratios->protein;
-        $customer->obj_lipids   = $program->macro_ratios->fat;
-        $customer->obj_glucides = $program->macro_ratios->carbs;
+        $customer->obj_fat   = $program->macro_ratios->fat;
+        $customer->obj_carbs = $program->macro_ratios->carbs;
         $customer->obj_water = (int) $program->daily_water_goal_ml;
         $customer->type_water = 'glass';
         $customer->volume_water_by_each = 250;

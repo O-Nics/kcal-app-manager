@@ -9,6 +9,7 @@ use App\Features\Auth\Data\RevokeTokenData;
 use App\Features\Auth\Data\UserLoginData;
 use App\Features\Auth\Data\UserRegisterData;
 use App\Features\Auth\Services\TokenService;
+use App\Features\Customer\Resources\CustomerResource;
 use App\Features\User\Resources\UserResource;
 use App\Mail\PasswordResetMail;
 use App\Models\User;
@@ -48,7 +49,7 @@ class AuthController extends Controller
         $this->tokenService = $tokenService;
     }
 
-    public function register(UserRegisterData $userRegisterData): JsonResponse
+    public function register(UserRegisterData $userRegisterData, Request $request): JsonResponse
     {
 
         try {
@@ -59,16 +60,15 @@ class AuthController extends Controller
                 [TokenAbility::REFRESH_TOKEN->value]
             );
 
-            $session = $this->sessionRepository->createSession($user, $userRegisterData->device, $tokens);
+            $session = $this->sessionRepository->createSession($user, $userRegisterData->device, $tokens, $request);
             $customer = $user->customers()->first();
             $customer->last_login_at = now();
             $customer->save();
 
             return response()->json([
                 'success' => true,
-                'user' => $user,
-                'customer' =>  $customer,
-                'device' => $session->device,
+                'user' => new UserResource($user),
+                'customer' => new CustomerResource($customer),
                 'access_token' => $tokens->accessPlain(),
                 'refresh_token' => $tokens->refreshPlain(),
             ]);
@@ -84,7 +84,13 @@ class AuthController extends Controller
     }
 
     public function login(UserLoginData $userLoginData, Request $request): JsonResponse
+//    public function login( Request $request): JsonResponse
     {
+//        sleep(2);
+//        return response()->json([
+//            'success' => false,
+//            'message' => 'An error occurred during login.',
+//        ], 500);
         $credentials = [
             'email' => strtolower($userLoginData->email),
             'password' => $userLoginData->password,
@@ -101,7 +107,7 @@ class AuthController extends Controller
                     [TokenAbility::REFRESH_TOKEN->value]
                 );
 
-                $session = $this->sessionRepository->createSession($user, $userLoginData->device, $tokens);
+                $session = $this->sessionRepository->createSession($user, $userLoginData->device, $tokens, $request);
                 $customer = null;
                 if($userLoginData->customerId){
                     $customer = $user->customers()
@@ -114,9 +120,8 @@ class AuthController extends Controller
 
                 return response()->json([
                     'success' => true,
-                    'user' => $user,
-                    'customer' =>  $customer ?: null,
-                    'device' => $session->device,
+                    'user' => new UserResource($user),
+                    'customer' =>  $customer != null ? new CustomerResource($customer) : null,
                     'access_token' => $tokens->accessPlain(),
                     'refresh_token' => $tokens->refreshPlain(),
                 ]);

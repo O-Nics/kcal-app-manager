@@ -23,8 +23,6 @@ class DeviceData extends Data
     #[Nullable]
     public ?string $deviceModel;
 
-    #[Nullable]
-    public ?string $deviceIp;
 
 
 }
